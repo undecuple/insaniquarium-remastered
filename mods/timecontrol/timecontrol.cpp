@@ -5,13 +5,14 @@
 // Windows virtual-key codes in mods/remastered-mod.ini.
 #include "remod.h"
 #include "game.h"
+#include "remodui.h"
 #include <stdio.h>
 #include <windows.h>
 
 static const RemodApi* api;
 static double scale = 1.0;
 static bool paused;
-static int kPause, kSlow, kFast;
+static int kPause, kSlow, kFast, kMenu;   // kMenu: the game's pause dialog (Space in the game; another key or none from the Keys tab)
 
 typedef void(__thiscall* PauseFn)(void*, bool);
 static PauseFn origPause;
@@ -54,6 +55,16 @@ static void Apply()
 static int Key(int vk, int down)
 {
     if (!down || !api->board()) return 0;   // only in a tank
+    // the game's own pause dialog moved to another key (or to none): Space no longer opens it, that key does
+    if (!Coop() && kMenu != VK_SPACE)
+    {
+        if (vk == VK_SPACE) return 1;
+        if (kMenu && vk == kMenu && ui::DialogCount(api) == 0)
+        {
+            if (void* app = api->app()) reinterpret_cast<void(__thiscall*)(void*)>(game::App_DoLostFocusDialog)(app);
+            return 1;
+        }
+    }
     if (Coop())
     {
         if (vk != kPause && vk != kSlow && vk != kFast) return 0;
@@ -65,7 +76,8 @@ static int Key(int vk, int down)
         else { s = s == 2.0 ? 1.0 : 2.0; p = false; }
         if (auto f = CoopFn<void (*)(int, int)>("CoopRequestSpeed")) f((int)(28 / s + 0.5), p ? 1 : 0);   // everyone, a moment later
         char t[64];
-        snprintf(t, sizeof t, p ? "Paused for everyone (F5)" : "Speed %gx for everyone", s);
+        if (p) snprintf(t, sizeof t, "Paused for everyone (%s)", ui::KeyName(kPause).c_str());
+        else snprintf(t, sizeof t, "Speed %gx for everyone", s);
         api->toast(t);
         return 1;
     }
@@ -76,7 +88,8 @@ static int Key(int vk, int down)
     Apply();
     api->redraw();   // the indicator changed (and a paused tank doesn't repaint by itself)
     char s[64];
-    snprintf(s, sizeof s, paused ? "Paused (F5)" : "Speed %gx", scale);
+    if (paused) snprintf(s, sizeof s, "Paused (%s)", ui::KeyName(kPause).c_str());
+    else snprintf(s, sizeof s, "Speed %gx", scale);
     api->toast(s);
     return 1;
 }
@@ -102,7 +115,8 @@ static void Overlay(void* g)
     double sc = scale; bool pz = paused;
     if (Coop()) CoopState(sc, pz);
     if (!pz && sc == 1.0) return;
-    const char* s = pz ? "PAUSED (F5)" : sc > 1 ? ">> 2x" : "> 0.75x";
+    std::string label = pz ? "PAUSED (" + ui::KeyName(kPause) + ")" : sc > 1 ? ">> 2x" : "> 0.75x";
+    const char* s = label.c_str();
     int w = api->text_width(s) + 12;
     api->fill_rect(g, 640 - w - 8, 430, w, 20, 0x90000000);
     api->draw_text(g, s, 640 - w - 2, 445, 0xffffffff);
@@ -113,6 +127,7 @@ static void Load()
     kPause = api->config_int("timecontrol", "pause", 0x74);   // VK_F5
     kSlow = api->config_int("timecontrol", "slow", 0x75);     // VK_F6
     kFast = api->config_int("timecontrol", "fast", 0x77);     // VK_F8
+    kMenu = api->config_int("timecontrol", "menu", VK_SPACE);
 }
 
 extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Pause with F5, play at 0.75x (F6) or 2x (F8)."; }
@@ -127,6 +142,6 @@ extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
     api->on_key(Key);
     api->on_tick(Tick);
     api->on_overlay(Overlay);
-    api->log("timecontrol: F5 pause, F6 0.75x, F8 2x");
+    api->log("timecontrol: %s pause, %s 0.75x, %s 2x, %s the game's pause dialog", ui::KeyName(kPause).c_str(), ui::KeyName(kSlow).c_str(), ui::KeyName(kFast).c_str(), ui::KeyName(kMenu).c_str());
     return 1;
 }

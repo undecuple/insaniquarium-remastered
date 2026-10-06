@@ -119,6 +119,7 @@ constexpr uintptr_t App_UpdateFrames = 0x0054bb30;         // void (WinFishApp*)
                                                            //   (@004802d0) counts app +0x484 and updates the widgets
 constexpr uintptr_t MTRand_Next = 0x0040aeb0;              // uint (MTRand*): the game's random numbers (MTRand at app +0x7b0)
 constexpr uintptr_t App_LostFocus = 0x00551d50;            // void (WinFishApp*): the window lost focus (pauses the tank; vtable 0x14c)
+constexpr uintptr_t App_DoLostFocusDialog = 0x0054eca0;    // void (WinFishApp*): the pause dialog ("Resume Game"), as Space in a tank (Board::KeyChar @00549d70)
 constexpr uintptr_t App_SaveProfile = 0x0054afd0;          // bool (WinFishApp*): saves the current profile
 constexpr uintptr_t App_DoTimedDialog = 0x0054b5b0;        // void (WinFishApp*, int id, bool modal, const string& header,
                                                            //   const string& lines, const string& footer, int buttons):

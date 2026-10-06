@@ -1,7 +1,7 @@
 # Insaniquarium - Remastered Mod
 
 **Mods for the original *Insaniquarium! Deluxe* on Steam.** Insaniquarium - Remastered Mod adds new features to the
-game you already own: online co-op for 2-4 players, extra modes, achievements, a native-resolution window and more.
+game you already own: online co-op for 2-4 players, extra modes, achievements, a large sharp window and more.
 Drop a few files into the game folder and play as usual. It never changes the game's own files, and removing it is
 deleting what you added.
 
@@ -15,6 +15,7 @@ Unofficial fan project, not affiliated with PopCap Games or EA. No game files ar
 | ![Extra Modes](docs/images/extra-modes.png) **Extra Modes:** daily challenge, boss rush, endless, sandbox, play as the alien | ![Play as the Alien](docs/images/play-as-alien.png) **Play as the Alien:** you steer the alien, a computer keeper fights back |
 | ![Mutators](docs/images/mutators.png) **15 mutators** to change the rules | ![Achievements](docs/images/achievements.png) **31 achievements** with shell rewards |
 | ![The Mods page](docs/images/mods-page.png) **The Mods page:** every mod, on/off, and its own screen | ![The co-op lobby](docs/images/coop-lobby.png) **The co-op lobby:** players with their avatars, roles, versus, split money |
+| ![The Keys tab](docs/images/keys-page.png) **The Keys tab:** every key, changed with a click, defaults with a right-click | |
 
 ## Requirements
 - ***Insaniquarium! Deluxe* from Steam** ([store page](https://store.steampowered.com/app/3320/)), installed and run
@@ -48,7 +49,7 @@ Step by step for Windows, Linux and Steam Deck: **[docs/INSTALL.md](docs/INSTALL
 ## Features
 | Mod | What it does | Keys |
 |---|---|---|
-| **settings** | The settings page (every option below, with tabs), the main menu's **Remastered** page, the loaded-mods screen (switch mods off or on, restart the game) | **F2** |
+| **settings** | The settings page (every option below, with tabs; every key on the **Keys** tab), the main menu's **Remastered** page, the loaded-mods screen (switch mods off or on, restart the game) | **F2** |
 | **hovercoins** | Coins, gems and treasure are collected when the pointer passes over them, no clicking needed | none |
 | **extramodes** | **Extra Modes** on the Remastered page: a **Daily Challenge** (the same tank and two mutators for everyone that day), **Boss Rush** (every alien in turn, tougher each time), **Endless** (waves that never stop), and **Records** with Hall of Fame tables | none |
 | **sandbox** | The game's hidden sandbox as a proper mode (from Extra Modes): a palette places fish, aliens and pets where you click; remove, clear, backdrops, hunger off, three save slots | **Tab** palette |
@@ -68,6 +69,22 @@ Step by step for Windows, Linux and Steam Deck: **[docs/INSTALL.md](docs/INSTALL
 **The Remastered page:** the **Remastered** button on the main menu (bottom left) turns the menu's button panel into
 the mod's: **Co-op**, **Extra Modes**, **Achievements**, **Mod Settings**, **About**, **Mods** (the loaded mods,
 switch them off or on) and **Records**; **Main Menu** goes back. The settings page also opens with **F2** anywhere.
+
+### Keys
+Every key can be changed on the settings page's **Keys** tab: click a key and press the new one (**Esc** keeps the old
+one, **Backspace** means no key). **Right-click** a key, or **Reset all keys**, for the defaults. A key used twice gets a
+red **!**.
+
+| Key | Does | Where |
+|---|---|---|
+| **F2** | the settings page | anywhere |
+| **F7** | the co-op screen | main menu |
+| **F4** | the list of achievements | anywhere but co-op |
+| **F11** | the screensaver | main menu |
+| **F12** | a screenshot | anywhere |
+| **F5** / **F6** / **F8** | pause / 0.75x / 2x (again: back to normal) | in a tank; in co-op only the host, for everyone |
+| **F3** | the frame counter | anywhere |
+| **Space** | the game's own pause dialog (moved to another key there, Space stops opening it) | in a tank |
 
 Built into Insaniquarium - Remastered Mod itself:
 - **Window choices** (Display tab of the settings): the game opens in its own **640x480** window by default (also the
@@ -130,6 +147,10 @@ any text editor (comments go on their own lines, starting with `;`). A mod can b
 [core]
 enabled=1          ; 0 = Insaniquarium - Remastered Mod off (same as holding Shift at start, but permanent)
 
+; keys (easier: the Keys tab): Windows key codes, 112 = F1 ... 123 = F12, 32 = Space, 65-90 = A-Z; 0 = no key
+[settings]
+open_key=113       ; F2
+
 [display]
 window=normal      ; the game's 640x480 window; native = large window; borderless = fills the screen; fullscreen
 scale=fit          ; integer = only whole multiples (2x, 3x...): sharpest pixels, wider black bars
@@ -152,11 +173,13 @@ richstart=0        ; hard, golden, combos, events, overeat, decay, gadgets (see 
 
 [achievements]
 banners=1          ; 0 = no banner when one unlocks
+open_key=115       ; F4
 
 [hovercoins]
 enabled=1          ; 0 = click coins as usual
 
 [coop]
+open_key=118       ; F7 on the main menu
 port=27615         ; the TCP port the host listens on (open it in your router to host over the internet)
 name=              ; your name in co-op (empty = your profile's name)
 avatar=1           ; your avatar in co-op: 0 none, 1 guppy, 2-31 the pets and special fish (or the Avatar button)
@@ -177,9 +200,10 @@ key=122            ; F11 on the main menu (0 = no key)
 quit=0             ; 1 = close the game while the screensaver shows (under Steam that ends the screensaver too)
 
 [timecontrol]
-pause=116          ; keys as Windows key codes: 116 = F5, 117 = F6, 119 = F8
-slow=117           ; (others: 80 = P, 32 = Space; full list: search "virtual-key codes")
-fast=119
+pause=116          ; F5
+slow=117           ; F6
+fast=119           ; F8
+menu=32            ; Space: the game's own pause dialog
 ```
 
 ## Uninstalling
@@ -198,7 +222,10 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
 | A message says a mod "crashed and was switched off" | That mod is off until the next start; the log names it and where it failed. Please report it. |
 | The game doesn't start at all | Remove the loader (Windows: `install-steam.bat uninstall`; Linux: `install-steam.sh --uninstall`) and tell us what the log said (open an issue). |
 | The window isn't the size you chose | The game is a 640x480 window by default: pick **Large**, **Borderless** or **Fullscreen** in the Display tab (or `[display] window=native`, `borderless`, `fullscreen`), then restart the game. The log says "native window: ..." for Large and Borderless, and "display: switching the game to ..." when the game came up in the other screen mode. |
-| Speed keys do nothing | They only work inside a tank and not in co-op (every player's game must run at the same speed), and the game window must have focus. Check the keys in `remastered-mod.ini`. |
+| Speed keys do nothing | They only work inside a tank, and the game window must have focus. In co-op only the host changes the speed (for everyone); a guest gets "Only the host controls the speed in co-op". Check the keys in `remastered-mod.ini`. |
+| Co-op says "too many lobbies for this account" | Only with older versions of the mod: update. The game now clears its own old listings by itself. |
+| The screensaver closes straight away | Moving the mouse or pressing a key ends it, as any screensaver; keep still for a second after starting it. The log says how it ended (`screensaver: ended after ...`). |
+| The Windows arrow shows instead of the game's cursor | Only in the **Large** or **Borderless** window, if the game's cursor pictures couldn't be read: the log says "couldn't make the game's cursors". |
 | Co-op says "Out of sync" | The players' games no longer match; the host sends everyone its game and you carry on from there ("Back in step with the host"), a few moments later than you were. If it keeps happening, report it with every player's `remastered-mod.log` (it records what differed): usually different mod versions. |
 | Co-op: "That game has already started or is full" | The game has four players already. |
 

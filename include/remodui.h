@@ -216,6 +216,24 @@ inline std::string UserData()
     return d + "userdata";
 }
 
+// a key's name for showing ("F2", "Space", "A"); "none" for 0 (a key setting switched off)
+inline std::string KeyName(int vk)
+{
+    if (vk <= 0) return "none";
+    if (vk >= VK_F1 && vk <= VK_F24) return "F" + std::to_string(vk - VK_F1 + 1);
+    UINT sc = MapVirtualKeyA((UINT)vk, 0 /* MAPVK_VK_TO_VSC */);
+    switch (vk)   // keys whose scan code is an extended one (the arrows and the block above them)
+    {
+        case VK_LEFT: case VK_RIGHT: case VK_UP: case VK_DOWN: case VK_PRIOR: case VK_NEXT: case VK_HOME: case VK_END:
+        case VK_INSERT: case VK_DELETE: case VK_DIVIDE: case VK_NUMLOCK: sc |= 0x100; break;
+    }
+    char n[64] = "";
+    if (sc && GetKeyNameTextA((LONG)(sc << 16), n, sizeof n) > 0) return n;
+    char b[16];
+    snprintf(b, sizeof b, "key %d", vk);
+    return b;
+}
+
 // ---- screens on the game's dialog ----------------------------------------------------------------------------------------
 inline void* OpenDialog(const RemodApi* api, int id, const char* header, const char* footer, int x, int y, int w, int h)
 {

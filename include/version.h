@@ -11,7 +11,7 @@ static const struct { const char* version; const char* lines[16]; } RemodChangel
     { "0.1.0", {
         "First release.",
         "Remastered page on the main menu; settings: F2.",
-        "Loaded mods screen with a restart button.",
+        "Mods page; every key can be changed (Keys tab).",
         "Window: 640x480, large, borderless or fullscreen.",
         "Co-op, 2-4 players: online with no setup,",
         "  Steam or address. Avatars, versus (a player",

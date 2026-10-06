@@ -598,12 +598,18 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
     }
     if (msg == WM_ENTERSIZEMOVE) DisplayPlayerMovesWindow();
     bool down = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN, up = msg == WM_KEYUP || msg == WM_SYSKEYUP;
+    // a key a mod took is the mod's: its auto-repeats and the characters it types (Space's ' ') don't reach the game
+    static WPARAM takenKey;
+    static bool swallowChar;
+    if ((msg == WM_CHAR || msg == WM_SYSCHAR) && swallowChar) { swallowChar = false; return 0; }
+    if (down && (lp & (1 << 30)) && takenKey && wp == takenKey) { swallowChar = true; return 0; }
+    if (up && wp == takenKey) takenKey = 0;
     if ((down && !(lp & (1 << 30))) || up)   // presses (not auto-repeat) and releases
         for (auto& cb : gKey)
         {
             int handled = 0;
             Guarded(cb.owner, "on_key", [&] { handled = cb.fn((int)wp, down ? 1 : 0); });
-            if (handled) return 0;
+            if (handled) { if (down) { takenKey = wp; swallowChar = true; } return 0; }
         }
     // native window: mouse positions in the big window -> the game's 640x480 (the wheel's are screen positions)
     if (((msg >= WM_MOUSEFIRST && msg <= WM_MBUTTONDBLCLK) && msg != WM_MOUSEWHEEL) && DisplayActive()) lp = DisplayMapMouse(lp);
