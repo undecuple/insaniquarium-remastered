@@ -3,6 +3,7 @@
 // pointer is over), the main menu's big buttons, its edit box, and tooltips. Header-only; needs remod.h version 3.
 #pragma once
 #include <windows.h>
+#include <shlobj.h>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -198,6 +199,21 @@ inline void EditBox(const RemodApi* api, void* g, const RECT& r, const std::stri
     std::string shown = text.empty() && !editing ? hint : text + (editing && (GetTickCount() / 400) % 2 ? "_" : "");
     int y = r.top + (H(r) + Ascent(f)) / 2 - 2;
     FitText(api, g, f, shown, r.left + 10, y, W(r) - 20, text.empty() && !editing ? Grey : White);
+}
+
+// the folder the game keeps its saves in (userdata in the game's data folder: ProgramData\Steam\Insaniquarium for the
+// Steam release); mods keep their own files there too
+inline std::string UserData()
+{
+    std::string d = game::ReadString(game::G_AppDataFolder);
+    if (d.empty())
+    {
+        char base[MAX_PATH];
+        if (SHGetFolderPathA(nullptr, 0x23 /* CSIDL_COMMON_APPDATA */, nullptr, 0, base) != S_OK) return "userdata";
+        d = std::string(base) + "\\PopCap Games\\Insaniquarium\\";
+    }
+    if (d.back() != '\\' && d.back() != '/') d += '\\';
+    return d + "userdata";
 }
 
 // ---- screens on the game's dialog ----------------------------------------------------------------------------------------

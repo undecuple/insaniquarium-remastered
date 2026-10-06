@@ -4,6 +4,7 @@
 #pragma once
 #include <stdint.h>
 #include <string.h>
+#include <string>
 
 // The game is recognised by its code in memory, not the exe file: the Steam release's Insaniquarium.exe is a launcher
 // that writes the same game build out as ProgramData\PopCap Games\Insaniquarium\popcapgame1.exe (different header and
@@ -153,6 +154,9 @@ constexpr int App_mUpdateCount = 0x484; // int: update ticks so far
 // game globals a co-op snapshot carries (not in the board's save)
 constexpr uintptr_t G_FoodQuality = 0x005e89dc, G_FoodQuantity = 0x005df58c, G_Unk89c0 = 0x005e89c0;   // int
 constexpr uintptr_t G_FastCoins = 0x005e89cc, G_BonesMode = 0x005e89ce;                              // bool
+// std::string: the game's data folder, ProgramData\<company>\<product>\ (SexyAppBase::Init, before the mods load):
+// "Steam\Insaniquarium" for the Steam release, "PopCap Games\Insaniquarium" for the others; empty on Windows XP
+constexpr uintptr_t G_AppDataFolder = 0x005e7f48;
 constexpr uintptr_t G_WadsworthHiding = 0x005e89d0, G_WadsworthX = 0x005e89d4, G_WadsworthY = 0x005e89d8; // int
 constexpr int App_mMTRand = 0x7b0;      // MTRand*
 constexpr int App_mDialogCount = 0x32c; // int: open dialogs (size of SexyAppBase::mDialogMap, std::map at +0x324)
@@ -253,6 +257,14 @@ inline MsvcString MakeString(const char* s)
     if (n < 16) { memcpy(r.bx.buf, s, n + 1); r.res = 15; }
     else { r.bx.ptr = s; r.res = (uint32_t)n; }
     return r;
+}
+
+// a std::string of the game's, read
+inline std::string ReadString(uintptr_t addr)
+{
+    const MsvcString* s = reinterpret_cast<const MsvcString*>(addr);
+    if (s->size > 4096) return "";
+    return std::string(s->res < 16 ? s->bx.buf : s->bx.ptr, s->size);
 }
 
 }  // namespace game

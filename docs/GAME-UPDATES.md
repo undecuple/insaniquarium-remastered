@@ -19,8 +19,10 @@ So an update can never crash the game through the mods; at worst the mods silent
   `steamapps/compatdata/3320/pfx/drive_c/ProgramData/PopCap Games/Insaniquarium/`.
 - The loader (`ddraw.dll`) sits next to `popcapgame1.exe` (`install-steam.bat` / `tools/install-steam.sh` put it
   there); the mods and settings stay in the Steam folder's `mods\`.
-- Saves: `C:\ProgramData\PopCap Games\Insaniquarium\userdata` (achievements and sandbox layouts are added there as
-  their own files). Settings: registry `HKCU\Software\PopCap\Insaniquarium`.
+- Saves: `C:\ProgramData\Steam\Insaniquarium\userdata` (the game's data folder is `ProgramData\<PartnerName>\<ProdName>`,
+  and the Steam release's `properties/partner.xml` sets PartnerName to `Steam`; other releases use `PopCap Games`). The
+  mods read the folder from the game (`G_AppDataFolder` in `include/game.h`, `ui::UserData()`) and add their own files
+  there (achievements, records, sandbox layouts). Settings: registry `HKCU\Software\PopCap\Insaniquarium`.
 
 ## The mods and the game functions each one uses
 Addresses are in `include/game.h` (names below are its constants); field offsets are there too.
