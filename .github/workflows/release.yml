@@ -16,7 +16,7 @@ jobs:
     container:
       image: node:24-bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install the build tools
         run: tools/ci-setup.sh
       - name: Check the version
@@ -30,7 +30,7 @@ jobs:
           SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) tools/package.sh
           tools/release-notes.sh "$VERSION"
           cat build/release/SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: Insaniquarium - Remastered Mod ${{ env.VERSION }}
           body_path: build/release/NOTES.md
