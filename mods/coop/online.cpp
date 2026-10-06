@@ -20,6 +20,7 @@ namespace online {
 namespace {
 
 const char* const Collection = "remod_lobbies";       // listed games (public storage objects)
+const char* const ListingKey = "game";                 // each account's one listing, overwritten (the room code is in its value)
 const char Alphabet[] = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";   // room codes: no 0/O, 1/I/L
 enum { OpData = 1, OpHost = 2, OpPart = 3, OpClosed = 4 };  // match data op codes: a whole message or its last
 const size_t Chunk = 1500;                             // piece, "I'm the host", a piece, "not taking players"
@@ -453,7 +454,24 @@ void Unlist(const Session& s)
 {
     std::string out, why;
     Authed(s.url, s.key, s.device, L"PUT", "/v2/storage/delete",
-           "{\"object_ids\":[{\"collection\":\"" + std::string(Collection) + "\",\"key\":" + Quote(s.code) + "}]}", out, why);
+           "{\"object_ids\":[{\"collection\":\"" + std::string(Collection) + "\",\"key\":\"" + ListingKey + "\"}]}", out, why);
+}
+// this account's listings left behind (earlier versions stored one per room code, and a game that crashed or was
+// closed never removed its own): all deleted, so a new one fits under the server's limit per account
+void ClearOwnListings(const Session& s)
+{
+    std::string out, why;
+    Json acc, list;
+    if (Authed(s.url, s.key, s.device, L"GET", "/v2/account", "", out, why) != 200 || !Parse(out, acc)) return;
+    std::string id = acc["user"]["id"].str;
+    if (id.empty()) return;
+    if (Authed(s.url, s.key, s.device, L"GET", std::string("/v2/storage/") + Collection + "?user_id=" + id + "&limit=100", "", out, why) != 200 || !Parse(out, list)) return;
+    std::string ids;
+    for (auto& o : list["objects"].arr)
+        if (o["user_id"].str == id) ids += std::string(ids.empty() ? "" : ",") + "{\"collection\":\"" + Collection + "\",\"key\":" + Quote(o["key"].str) + "}";
+    if (ids.empty()) return;
+    Authed(s.url, s.key, s.device, L"PUT", "/v2/storage/delete", "{\"object_ids\":[" + ids + "]}", out, why);
+    Log("online: removed %d old listing(s) of this account", (int)std::count(ids.begin(), ids.end(), '{'));
 }
 void List(const Session& s, int members)
 {
@@ -461,9 +479,14 @@ void List(const Session& s, int members)
     std::string value = "{\"tag\":" + Quote(s.tag) + ",\"name\":" + Quote(s.name) + ",\"code\":" + Quote(s.code) +
                         ",\"members\":" + std::to_string(members) + ",\"time\":" + std::to_string((long long)time(nullptr)) + "}";
     std::string out, why;
-    int st = Authed(s.url, s.key, s.device, L"PUT", "/v2/storage",
-                    "{\"objects\":[{\"collection\":\"" + std::string(Collection) + "\",\"key\":" + Quote(s.code) + ",\"value\":" + Quote(value) +
-                    ",\"permission_read\":2,\"permission_write\":1}]}", out, why);
+    std::string body = "{\"objects\":[{\"collection\":\"" + std::string(Collection) + "\",\"key\":\"" + ListingKey + "\",\"value\":" + Quote(value) +
+                       ",\"permission_read\":2,\"permission_write\":1}]}";
+    int st = Authed(s.url, s.key, s.device, L"PUT", "/v2/storage", body, out, why);
+    if (st == 400 && why.find("too many") != std::string::npos)
+    {
+        ClearOwnListings(s);
+        st = Authed(s.url, s.key, s.device, L"PUT", "/v2/storage", body, out, why);
+    }
     if (st != 200)
     {
         Log("online: couldn't list the game: %s", why.c_str());
