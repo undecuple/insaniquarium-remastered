@@ -32,6 +32,9 @@ constexpr DWORD DDBLT_COLORFILL = 0x400, DDBLT_WAIT = 0x1000000;
 constexpr int VtCreateSurface = 6, VtBlt = 5;   // IDirectDraw(7)::CreateSurface, IDirectDrawSurface(7)::Blt
 
 bool gOn, gInteger, gBorderless, gWindowDone;
+RECT gWantRect;        // where the window was put (some desktops ignore a move the first time): re-applied for a few seconds
+DWORD gPlacedAt;       // GetTickCount() when, 0 = done (or the player moved the window)
+int gPlaceTries;
 HWND gWnd;
 void* gPrimary[2];
 void* gFrame;          // the surface the game copies its frame from (its 640x480 draw surface)
@@ -101,9 +104,21 @@ void MakeWindowNative()
         r = { 0, 0, GameW * k, GameH * k };
         AdjustWindowRect(&r, style, FALSE);
         int w = r.right - r.left, h = r.bottom - r.top;
-        SetWindowLongA(gWnd, GWL_STYLE, style);
-        SetWindowPos(gWnd, HWND_TOP, wa.left + (wa.right - wa.left - w) / 2, wa.top + (wa.bottom - wa.top - h) / 2, w, h,
-                     SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+        // hidden while it changes: shown again at the new place, which desktops that ignore a mapped window's move honour
+        gWantRect = { wa.left + (wa.right - wa.left - w) / 2, wa.top + (wa.bottom - wa.top - h) / 2, 0, 0 };
+        gWantRect.right = gWantRect.left + w; gWantRect.bottom = gWantRect.top + h;
+        ShowWindow(gWnd, SW_HIDE);
+        SetWindowLongA(gWnd, GWL_STYLE, style & ~WS_VISIBLE);
+        SetWindowPos(gWnd, HWND_TOP, gWantRect.left, gWantRect.top, w, h, SWP_FRAMECHANGED | SWP_NOACTIVATE);
+        ShowWindow(gWnd, SW_SHOW);
+        SetForegroundWindow(gWnd);
+        gPlacedAt = GetTickCount(); gPlaceTries = 0;
+        RECT got;
+        GetWindowRect(gWnd, &got);
+        CoreLog("native window: monitor %ld,%ld %ldx%ld, work area %ld,%ld %ldx%ld; window wanted at %ld,%ld, is at %ld,%ld %ldx%ld",
+                mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top,
+                wa.left, wa.top, wa.right - wa.left, wa.bottom - wa.top, gWantRect.left, gWantRect.top, got.left, got.top,
+                got.right - got.left, got.bottom - got.top);
     }
     Layout();
     RECT c;
@@ -299,6 +314,19 @@ HRESULT BltCommon(int v, void* self, RECT* dst, void* src, RECT* srcRect, DWORD 
     if (gWindowDone && IsIconic(gWnd)) return blt(self, dst, src, srcRect, flags, fx);   // minimised: nothing to show, keep the layout
     if (!gWindowDone) MakeWindowNative();
     else Layout();
+    // the first seconds: back where it was put, if the desktop or the game moved it (not once the player moves it)
+    if (gPlacedAt && GetTickCount() - gPlacedAt < 3000)
+    {
+        RECT got;
+        GetWindowRect(gWnd, &got);
+        if ((got.left != gWantRect.left || got.top != gWantRect.top) && gPlaceTries < 5)
+        {
+            gPlaceTries++;
+            CoreLog("native window: moved to %ld,%ld: putting it back at %ld,%ld", got.left, got.top, gWantRect.left, gWantRect.top);
+            SetWindowPos(gWnd, nullptr, gWantRect.left, gWantRect.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+    }
+    else gPlacedAt = 0;
     if (gRealSetCursor) TakeGameCursors(true);
     POINT o{ 0, 0 };
     ClientToScreen(gWnd, &o);
@@ -362,37 +390,43 @@ constexpr GUID IID_IDirectDraw_ = { 0x6C14DB80, 0xA733, 0x11CE, { 0xA5, 0x21, 0x
 
 }  // namespace
 
-static bool gWanted, gNeedSwitch;   // the setting is on (even if this session started fullscreen)
+// [display] window: normal (the default) = the game's own 640x480 window; native = large; borderless; fullscreen = the
+// game's own fullscreen mode. The game reads its screen mode (registry ScreenMode: 0 windowed, 1 fullscreen) at start and
+// saves it when it closes, so the mode is written for every start, and switched once at the first frame if this start
+// came up the other way (the Steam release starts fullscreen unless told otherwise)
+static int gScreenMode = 0;       // what this setting wants: 0 windowed, 1 fullscreen
+static int gNeedSwitch = -1;      // once: switch to windowed (1) or fullscreen (0); -1 nothing to do
 
-static void SetWindowedForNextStart(DWORD* previous)
+static void SetScreenModeForNextStart(DWORD* previous)
 {
     HKEY k;
     DWORD size = sizeof(DWORD);
     if (RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\PopCap\\Insaniquarium", 0, nullptr, 0, KEY_READ | KEY_WRITE, nullptr, &k, nullptr) != ERROR_SUCCESS) return;
     if (previous) RegQueryValueExA(k, "ScreenMode", nullptr, nullptr, (BYTE*)previous, &size);
-    DWORD zero = 0;
-    RegSetValueExA(k, "ScreenMode", 0, REG_DWORD, (const BYTE*)&zero, sizeof zero);
+    DWORD v = (DWORD)gScreenMode;
+    RegSetValueExA(k, "ScreenMode", 0, REG_DWORD, (const BYTE*)&v, sizeof v);
     RegCloseKey(k);
 }
 
 void DisplayInit()
 {
-    std::string mode = CoreConfigString("display", "window", "native");   // the default: native (window=normal turns it off)
+    std::string mode = CoreConfigString("display", "window", "normal");
     gBorderless = mode == "borderless";
     gOn = mode == "native" || gBorderless;
+    gScreenMode = mode == "fullscreen" ? 1 : 0;
     gInteger = CoreConfigString("display", "scale", "fit") == "integer";
-    gWanted = gOn;
-    if (!gOn) return;
-    if (void* prev = PatchImport("user32.dll", "GetCursorPos", (void*)&GameGetCursorPos)) gRealGetCursorPos = (GetCursorPosFn)prev;
-    else CoreLog("native window: the game's GetCursorPos not found (its own cursor may show only in the top-left corner)");
-    if (void* prev = PatchImport("user32.dll", "SetCursor", (void*)&GameSetCursor)) gRealSetCursor = (SetCursorFn)prev;
-    // the game must start windowed: its own setting, read at start (so it counts from the next start if it was off)
-    DWORD screenMode = 0;
-    SetWindowedForNextStart(&screenMode);
-    if (screenMode != 0)
+    if (gOn)
     {
-        gNeedSwitch = true;   // this session starts fullscreen: the core switches the game to windowed once it runs
-        CoreLog("native window: the game was set to fullscreen; switching it to windowed");
+        if (void* prev = PatchImport("user32.dll", "GetCursorPos", (void*)&GameGetCursorPos)) gRealGetCursorPos = (GetCursorPosFn)prev;
+        else CoreLog("native window: the game's GetCursorPos not found (its own cursor may show only in the top-left corner)");
+        if (void* prev = PatchImport("user32.dll", "SetCursor", (void*)&GameSetCursor)) gRealSetCursor = (SetCursorFn)prev;
+    }
+    DWORD was = (DWORD)gScreenMode;
+    SetScreenModeForNextStart(&was);
+    if ((was != 0) != (gScreenMode != 0))
+    {
+        gNeedSwitch = gScreenMode ? 0 : 1;
+        CoreLog("display: the game starts %s this time; switching it to %s", was ? "fullscreen" : "windowed", gScreenMode ? "fullscreen" : "windowed");
     }
 }
 
@@ -419,6 +453,7 @@ void DisplayOnDirectDraw(void* dd7, void* dd1)
 }
 
 void DisplaySetWindow(HWND w) { gWnd = w; }
+void DisplayPlayerMovesWindow() { gPlacedAt = 0; }
 
 bool DisplayEnabled() { return gOn; }
 
@@ -445,10 +480,10 @@ bool DisplayCaptureFrame(unsigned* out)
     DeleteDC(mem);
     return ok && bits;
 }
-bool DisplayNeedsSwitch() { bool r = gNeedSwitch; gNeedSwitch = false; return r; }
+int DisplayNeedsSwitch() { int r = gNeedSwitch; gNeedSwitch = -1; return r; }
 
 // the game saves its own ScreenMode when it closes (fullscreen if this session was): set windowed again after that
-void DisplayAtExit() { if (gWanted) SetWindowedForNextStart(nullptr); }
+void DisplayAtExit() { SetScreenModeForNextStart(nullptr); }
 
 bool DisplayActive() { return gOn && gWindowDone; }
 

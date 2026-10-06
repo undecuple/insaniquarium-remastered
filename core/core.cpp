@@ -522,10 +522,11 @@ using UpdateFramesFn = void(__thiscall*)(void*);
 UpdateFramesFn oUpdateFrames;
 void __fastcall UpdateFrames(void* app, void*)
 {
-    if (DisplayNeedsSwitch())
+    int sw = DisplayNeedsSwitch();
+    if (sw >= 0)
     {
-        Log("native window: switching the game to windowed");
-        reinterpret_cast<void(__thiscall*)(void*, bool)>((*reinterpret_cast<void***>(app))[App_vSwitchScreenMode / 4])(app, true);
+        Log("display: switching the game to %s", sw ? "windowed" : "fullscreen");
+        reinterpret_cast<void(__thiscall*)(void*, bool)>((*reinterpret_cast<void***>(app))[App_vSwitchScreenMode / 4])(app, sw == 1);
     }
     oUpdateFrames(app);
 }
@@ -595,6 +596,7 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
         gToastUntilInput = false;
         gToastUntil = GetTickCount() + 1500;
     }
+    if (msg == WM_ENTERSIZEMOVE) DisplayPlayerMovesWindow();
     bool down = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN, up = msg == WM_KEYUP || msg == WM_SYSKEYUP;
     if ((down && !(lp & (1 << 30))) || up)   // presses (not auto-repeat) and releases
         for (auto& cb : gKey)
