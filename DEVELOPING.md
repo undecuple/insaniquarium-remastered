@@ -38,12 +38,13 @@ GitHub release with the zip, `SHA256SUMS.txt` and that version's changelog. Ever
 `.github/workflows/build.yml` (the zip is kept as an artifact). By hand: `tools/package.sh` (zip + `SHA256SUMS.txt`
 in `build/release/`), `tools/release-notes.sh <version>` (the release text).
 
-**Dependency updates:** `renovate.json` lets Renovate (the free Mend Renovate app on GitHub: install it for the
-repository, no workflow needed) open pull requests each Monday for the GitHub Actions, the co-op server images in
-`server/` and the MinHook and Steamworks.NET versions pinned in `tools/fetch-deps.sh` (`# renovate:` comments). The
-CI image stays put (it fixes the compiler, so releases stay reproducible), Postgres major versions are never
-proposed (they need a data migration), and nothing merges itself: the build workflow checks each pull request; try
-the build in the game before merging.
+**Dependency updates:** on GitHub, Dependabot (`.github/dependabot.yml`) opens a pull request each Monday for the
+GitHub Actions (all in one) and the co-op server images in `server/docker-compose.yml` (never a Postgres major version:
+it needs a data migration). Renovate (`renovate.json`; the free Mend Renovate app, installed for the repository) covers
+only what Dependabot can't read: the MinHook and Steamworks.NET versions pinned in `tools/fetch-deps.sh` (`# renovate:`
+comments). The CI image (`node:24-bookworm`) stays put on purpose: it fixes the compiler, so releases stay
+reproducible. Nothing merges itself: the build workflow checks each pull request; try the build in the game before
+merging. Security alerts for dependencies are switched on in the repository's settings (no file needed).
 
 ## Testing without Windows
 ```sh
