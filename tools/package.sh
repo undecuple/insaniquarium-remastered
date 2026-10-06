@@ -18,7 +18,15 @@ mkdir -p "$D/mods"
 cp build/dist/ddraw.dll build/dist/install-steam.bat tools/install-steam.sh "$D/"
 cp build/dist/mods/*.dll build/dist/mods/remastered-mod.ini "$D/mods/"
 [ $STEAMAPI = 0 ] || { mkdir -p "$D/mods/coop"; cp third_party/steamworks/steam_api.dll "$D/mods/coop/"; }
-cp README.md "$D/README.txt"
+# README.txt: the README without what only works on a web page (the screenshot table, image badges)
+python3 - "$D/README.txt" <<'PY'
+import re, sys
+text = open('README.md').read()
+text = re.sub(r'## Screenshots\n.*?(?=\n## )', '', text, flags=re.S)
+text = re.sub(r'\[!\[[^\]]*\]\([^)]*\)\]\(([^)]*)\)', r'\1', text)   # an image link (the Ko-fi badge): its address
+text = '\n'.join(l for l in text.split('\n') if not l.lstrip().startswith('!['))
+open(sys.argv[1], 'w', newline='\r\n').write(text)
+PY
 cp docs/INSTALL.md "$D/INSTALL.txt"
 python3 - "$D/CHANGELOG.txt" <<'PY'
 import re, sys
