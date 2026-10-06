@@ -14,7 +14,7 @@ jobs:
     container:
       image: node:24-bookworm   # Debian's mingw-w64 (GCC 12): the same tools as every release, so builds are reproducible
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install the build tools
         run: tools/ci-setup.sh
       - name: Build
@@ -23,7 +23,7 @@ jobs:
         run: |
           git config --global --add safe.directory "$PWD"
           SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) tools/package.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-zip
           path: |
