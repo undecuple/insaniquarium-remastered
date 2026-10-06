@@ -1,0 +1,31 @@
+# Builds the mod (and the test-only mods) for every push and pull request, and keeps the release zip as an artifact.
+name: build
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:24-bookworm   # Debian's mingw-w64 (GCC 12): the same tools as every release, so builds are reproducible
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the build tools
+        run: tools/ci-setup.sh
+      - name: Build
+        run: ./build.sh --tests
+      - name: Package
+        run: |
+          git config --global --add safe.directory "$PWD"
+          SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) tools/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-zip
+          path: |
+            build/release/*.zip
+            build/release/SHA256SUMS.txt

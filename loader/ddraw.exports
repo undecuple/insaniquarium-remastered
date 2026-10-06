@@ -1,0 +1,42 @@
+# ddraw.dll exports: Wine's 32-bit ddraw.dll plus the extra ones in Windows' ddraw.dll. DirectDrawCreate and
+# DirectDrawCreateEx are implemented by the core (they load the mods first); the rest jump to the system ddraw.dll.
+# Each line: the export name and its stdcall argument bytes (from the DDK headers; InternalLock/InternalUnlock are
+# undocumented and follow DDInternalLock/Unlock). The size matters only for an export the system ddraw.dll lacks:
+# its stand-in returns E_NOTIMPL and pops exactly that many bytes, so a caller's stack stays intact.
+AcquireDDThreadLock 0
+CompleteCreateSysmemSurface 4
+D3DParseUnknownCommand 8
+DDGetAttachedSurfaceLcl 12
+DDHAL32_VidMemAlloc 16
+DDHAL32_VidMemFree 12
+DDInternalLock 8
+DDInternalUnlock 4
+DirectDrawCreate 12
+DirectDrawCreateClipper 12
+DirectDrawCreateEx 16
+DirectDrawEnumerateA 8
+DirectDrawEnumerateExA 12
+DirectDrawEnumerateExW 12
+DirectDrawEnumerateW 8
+DllCanUnloadNow 0
+DllGetClassObject 12
+DllRegisterServer 0
+DllUnregisterServer 0
+DSoundHelp 12
+GetDDSurfaceLocal 12
+GetNextMipMap 4
+GetOLEThunkData 4
+GetSurfaceFromDC 12
+HeapVidMemAllocAligned 20
+InternalLock 8
+InternalUnlock 4
+LateAllocateSurfaceMem 16
+RegisterSpecialCase 16
+ReleaseDDThreadLock 0
+SetAppCompatData 8
+VidMemAlloc 12
+VidMemAmountFree 4
+VidMemFini 4
+VidMemFree 8
+VidMemInit 20
+VidMemLargestFree 4

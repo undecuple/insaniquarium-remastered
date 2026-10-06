@@ -1,0 +1,23 @@
+# HTTPS for an internet-facing server: Caddy gets a certificate for SERVER_DOMAIN (Let's Encrypt) and passes
+# https://SERVER_DOMAIN/ (WebSockets included) to Nakama, which then stops listening on 7350 itself.
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+# Needs: SERVER_DOMAIN in .env, a DNS record pointing it at this machine, ports 80 and 443 open.
+services:
+  nakama:
+    ports: !override
+      - "${NAKAMA_CONSOLE_BIND:-127.0.0.1}:${NAKAMA_CONSOLE_PORT:-7351}:7351"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    command: caddy reverse-proxy --from "${SERVER_DOMAIN:?set SERVER_DOMAIN in .env}" --to nakama:7350
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy:/data
+    depends_on:
+      - nakama
+
+volumes:
+  caddy:

@@ -1,0 +1,62 @@
+# Insaniquarium - Remastered Mod: your own co-op server (Nakama + Postgres). Guide: ../docs/SERVER.md
+#   cp .example.env .env        # then change every "change-me"
+#   docker compose up -d
+# Players connect to http://<this machine>:7350 (LAN, VPN). For the internet with HTTPS, add the Caddy file:
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+name: insaniquarium-coop
+
+services:
+  nakama:
+    image: heroiclabs/nakama:3.41.0
+    restart: unless-stopped
+    environment:
+      DB_ADDRESS: "${POSTGRES_USER:-nakama}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-nakama}?sslmode=disable"
+      NAKAMA_SERVER_KEY: ${NAKAMA_SERVER_KEY:?set NAKAMA_SERVER_KEY in .env}
+      NAKAMA_SESSION_KEY: ${NAKAMA_SESSION_KEY:?set NAKAMA_SESSION_KEY in .env}
+      NAKAMA_REFRESH_KEY: ${NAKAMA_REFRESH_KEY:?set NAKAMA_REFRESH_KEY in .env}
+      NAKAMA_HTTP_KEY: ${NAKAMA_HTTP_KEY:?set NAKAMA_HTTP_KEY in .env}
+      NAKAMA_CONSOLE_USERNAME: ${NAKAMA_CONSOLE_USERNAME:-admin}
+      NAKAMA_CONSOLE_PASSWORD: ${NAKAMA_CONSOLE_PASSWORD:?set NAKAMA_CONSOLE_PASSWORD in .env}
+      NAKAMA_CONSOLE_SIGNING_KEY: ${NAKAMA_CONSOLE_SIGNING_KEY:?set NAKAMA_CONSOLE_SIGNING_KEY in .env}
+      NAKAMA_LOG_LEVEL: ${NAKAMA_LOG_LEVEL:-INFO}
+    entrypoint: ["/bin/sh", "-ec"]
+    # $$ = a variable of the container's shell, not of compose. Bigger messages and queue: a player joining a running
+    # game is sent the whole game state.
+    command:
+      - >
+        /nakama/nakama migrate up --database.address "$$DB_ADDRESS" &&
+        exec /nakama/nakama --name insaniquarium --database.address "$$DB_ADDRESS"
+        --logger.level "$$NAKAMA_LOG_LEVEL"
+        --socket.server_key "$$NAKAMA_SERVER_KEY"
+        --socket.max_message_size_bytes 65536 --socket.outgoing_queue_size 512
+        --session.encryption_key "$$NAKAMA_SESSION_KEY" --session.refresh_encryption_key "$$NAKAMA_REFRESH_KEY"
+        --session.token_expiry_sec 86400
+        --runtime.http_key "$$NAKAMA_HTTP_KEY"
+        --console.username "$$NAKAMA_CONSOLE_USERNAME" --console.password "$$NAKAMA_CONSOLE_PASSWORD"
+        --console.signing_key "$$NAKAMA_CONSOLE_SIGNING_KEY"
+    volumes:
+      - ./modules:/nakama/data/modules:ro   # server rules (modules/README.md); Nakama loads the Lua files here at start
+    ports:
+      - "${NAKAMA_API_BIND:-0.0.0.0}:${NAKAMA_API_PORT:-7350}:7350"           # the game connects here
+      - "${NAKAMA_CONSOLE_BIND:-127.0.0.1}:${NAKAMA_CONSOLE_PORT:-7351}:7351" # admin console: this machine only
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nakama}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-nakama}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  db:

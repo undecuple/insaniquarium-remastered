@@ -1,0 +1,28 @@
+// Insaniquarium - Remastered Mod: the release version and what's new in each (the release zip's CHANGELOG.txt and the
+// release page). Newest first, short lines (about 50 characters);
+// bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
+#pragma once
+#define REMOD_VERSION "0.1.0"
+#define REMOD_WIDEN2(x) L##x
+#define REMOD_WIDEN(x) REMOD_WIDEN2(x)
+#define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
+
+static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.1.0", {
+        "First release.",
+        "Remastered page on the main menu; settings: F2.",
+        "Loaded mods screen with a restart button.",
+        "Native-resolution window (Display tab).",
+        "Co-op, 2-4 players: online with no setup,",
+        "  Steam or address. Avatars, versus (a player",
+        "  steers the aliens), split money, joining.",
+        "Autosave, continue with shells.",
+        "The game's screensaver from the menu (F11).",
+        "Collect coins by hovering over them.",
+        "15 mutators, 31 achievements with rewards.",
+        "Extra Modes: daily challenge, boss rush,",
+        "  endless, sandbox, play as the alien, records.",
+        "Hungry-fish marker, coin values, time control,",
+        "  frame counter (F3), screenshots (F12).",
+        nullptr } },
+};

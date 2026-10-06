@@ -1,0 +1,39 @@
+build/
+third_party/
+server/.env
+# your server settings: only the example is shared
+server/.env.*
+!server/.example.env
+# logs from testing a build in place
+*.log
+# editors and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+# built or downloaded binaries and release zips: releases come from CI, never from the repo
+*.dll
+*.exe
+*.scr
+*.zip
+*.o
+# the game's own files (copyrighted, never shared), e.g. a game copy unpacked here for testing
+/images/
+/sounds/
+/music/
+/properties/
+/userdata/
+*.dat
+# keys and certificates: the server's real ones stay on the server
+.env
+*.pem
+*.key
+*.crt
+*.p12
+# Python's cache from running the tools
+__pycache__/
+# kept only in the project's private copy: the internal release plan, the private Forgejo CI and its publish script
+/docs/RELEASE.md
+/.forgejo/
+/tools/publish-release.sh
