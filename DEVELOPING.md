@@ -7,10 +7,10 @@ Plans: [docs/ROADMAP.md](docs/ROADMAP.md) (features, phases),
 `tools/check-game.py`), [docs/SERVER.md](docs/SERVER.md) (hosting a
 Nakama co-op server; files in `server/`).
 
-Status: phase 1–2 working (loader, hooks, mod API, overlay on every screen, crash containment, safe mode, save backup;
-`timecontrol`, native-resolution window), tested under Wine (menus, a level at 2x, Virtual Tank, quitting through the game), Proton-GE (profile, a
-level, speed and pause) and the Steam release from the real Steam client (Proton Experimental); not yet on Windows
-itself.
+Status: all 16 mods working (see [docs/ROADMAP.md](docs/ROADMAP.md)): the loader, hooks, mod API, overlay on every screen,
+crash containment, safe mode and save backup, the window choices, online co-op through the public server. Tested under
+Wine, Proton-GE and the Steam release from the real Steam client (Proton Experimental, on a Wayland desktop); not yet on
+Windows itself.
 
 ## How it works
 `ddraw.dll` is a proxy: the game loads DirectDraw from its own folder first, and every DirectDraw call is passed to
@@ -61,10 +61,12 @@ the Steam release: add `GAME=<a copy of its folder> STEAMBUILD=1 SteamAppId=3320
 prefix's ProgramData like `install-steam.sh` does)
 (through `proton run` inside `steam-run`). The runner starts the game windowed (registry `ScreenMode=0`; `WINDOWED=0`
 keeps the game's own setting): fullscreen under Proton is a scaled fake mode where headless input doesn't work.
-Under Proton in Xvfb, mouse presses also never reach the native window (a window exactly the size of the screen;
-motion arrives, presses don't; on a real desktop it works): for Proton runs that click, add
-`INI="display.window=normal"`. `DIST=FOLDER` installs another build than `build/dist` (e.g. an unpacked release, for a
-clean-install test); `WM=/path/to/openbox` runs a window manager in the hidden display.
+Under Proton in Xvfb, mouse presses also never reach the borderless window (a window exactly the size of the screen;
+motion arrives, presses don't; on a real desktop it works), and the Steam release may not start at all: keep Proton runs
+at `window=normal` (the default), or use `REALDISPLAY=:0` to run on your own screen instead of a hidden one (the window
+shows and takes the focus; sound stays off). `DIST=FOLDER` installs another build than `build/dist` (e.g. an unpacked
+release, for a clean-install test); `WM=/path/to/openbox` runs a window manager in the hidden display (needed to see the
+Large window's frame and placement).
 First-run screens: the "check for updates" question (No = 388,206), then the
 name box.
 
@@ -106,6 +108,11 @@ as the defaults you pass, and `config_set` adds it.
 | Messages | `toast`, `log` (to `mods\remastered-mod.log`) |
 | Mods | `mod_list` (every DLL in `mods\` with its state and description), `restart` |
 | Co-op | `set_input_filter`, `inject_input` (used by `coop`; see *Mods and co-op*) |
+
+**Keys:** read a mod's keys from the ini (`config_int("mymod", "key", VK_F9)`, again in `on_config`, so changes from
+the settings page apply at once; 0 = no key) and show them with `ui::KeyName(vk)` ("F9", "Space"), never as fixed text.
+A key your `on_key` returns 1 for is yours: its auto-repeats and the character it types (Space's `' '`) don't reach the
+game either. The settings page's Keys tab lists the built-in mods' keys.
 
 Optional exports: `RemodDescribe()` (one line shown on the Mods page) and `RemodOpen()` (gives the mod an **Open**
 button there): [docs/MOD-MANAGER.md](docs/MOD-MANAGER.md).

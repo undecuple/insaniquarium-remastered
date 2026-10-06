@@ -835,6 +835,9 @@ static void SendChat(const std::string& text)
     else Send(peers[0], MChat, text);
 }
 
+// keys that only do something on this machine (screenshot, frame counter): never sent to the others
+static bool LocalKey(int vk) { return vk == api->config_int("screenshot", "key", VK_F12) || vk == api->config_int("fps", "key", VK_F3); }
+
 static int InputFilter(unsigned msg, unsigned wp, long lp)
 {
     if (state != Playing) return 0;
@@ -871,8 +874,8 @@ static int InputFilter(unsigned msg, unsigned wp, long lp)
         case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK: e.kind = EvMDown; break;
         case WM_MBUTTONUP: e.kind = EvMUp; break;
         case WM_MOUSEWHEEL: e.kind = EvWheel; e.v = (uint16_t)HIWORD(wp); e.x = e.y = 0; break;
-        case WM_KEYDOWN: case WM_SYSKEYDOWN: if (wp == VK_F12 || wp == VK_F3) return 0; e.kind = EvKeyDown; e.v = (uint16_t)wp; e.x = e.y = 0; break;
-        case WM_KEYUP: case WM_SYSKEYUP: if (wp == VK_F12 || wp == VK_F3) return 0; e.kind = EvKeyUp; e.v = (uint16_t)wp; e.x = e.y = 0; break;
+        case WM_KEYDOWN: case WM_SYSKEYDOWN: if (LocalKey((int)wp)) return 0; e.kind = EvKeyDown; e.v = (uint16_t)wp; e.x = e.y = 0; break;
+        case WM_KEYUP: case WM_SYSKEYUP: if (LocalKey((int)wp)) return 0; e.kind = EvKeyUp; e.v = (uint16_t)wp; e.x = e.y = 0; break;
         case WM_CHAR: e.kind = EvChar; e.v = (uint16_t)wp; e.x = e.y = 0; break;
         default: return 1;
     }
@@ -1744,7 +1747,8 @@ static int Mouse(int x, int y, int button, int down)
 static int Key(int vk, int down)
 {
     if (!down || state == Playing) return 0;
-    if (vk == VK_F7 && !screen && ui::OnMainMenu(api)) { OpenScreen(); return 1; }
+    int k = api->config_int("coop", "open_key", VK_F7);   // the Keys tab of the settings
+    if (k && vk == k && !screen && ui::OnMainMenu(api)) { OpenScreen(); return 1; }
     if (!screen || !editing) return 0;
     std::string& t = editField ? *editField : address;
     bool digitsOnly = &t == &srvPort;

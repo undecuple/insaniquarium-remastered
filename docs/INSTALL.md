@@ -81,8 +81,13 @@ and start it again.
   every mod it loaded.
 - **The mod's features:** the **Remastered** button at the bottom left of the main menu (co-op, extra modes,
   achievements, settings, the list of mods). Settings also open with **F2**.
-- **Your saves** are copied once to `userdata-before-remastered-mod` (next to the game's `userdata`) before the mod
-  changes anything.
+- **Your saves** are copied once to `userdata-before-remastered-mod` (next to the game's `userdata`; for the Steam
+  release that's `C:\ProgramData\Steam\Insaniquarium`) before the mod changes anything.
+- **Keys:** **F2** → Keys: click a key to change it; right-click or **Reset all keys** for the defaults.
+- **The window:** the game opens in its own 640x480 window. For a bigger one: **F2** → Display → Window: **Large** (as
+  big as your screen allows, sharp, resizable), **Borderless** (fills the screen) or **Fullscreen**; restart the game.
+- **Screensaver:** **F11** on the main menu (or **Open** on the Mods page) shows your Virtual Tank full-screen; move
+  the mouse to come back.
 - **Playing without mods for once:** hold **Shift** while the game starts.
 
 ### Co-op
@@ -119,6 +124,8 @@ The save backup (`userdata-before-remastered-mod`) can be deleted once you're ha
 | The game doesn't start any more | Uninstall as above (or hold Shift while starting), and look at the end of `mods/remastered-mod.log`. |
 | A message says a mod "crashed and was switched off" | That mod is off until the next start; the log says where it failed. Please report it with the log. |
 | `install-steam.sh` says "No Proton prefix" | Start the game once from Steam first (step 1). |
+| Co-op says "too many lobbies for this account" | Only older versions of the mod: update. The game now clears its own old listings by itself. |
+| The screensaver closes straight away | Moving the mouse or pressing a key ends it, as any screensaver; keep still for a second after starting it. The log says how it ended (`screensaver: ended after ...`). |
 
 More in the README's *Troubleshooting* section.
 

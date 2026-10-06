@@ -17,9 +17,11 @@ keep their games on a machine they control (or a LAN party without internet):
 - **relayed matches:** one room per co-op game, joined with a 5-character room code; the server forwards each player's
   inputs to the others;
 - **storage:** listed games are public objects in the `remod_lobbies` collection, which **Find games** reads; private
-  games aren't listed. Each entry carries a timestamp and is refreshed every 30 s while the game has room (players can
-  join a game in progress); it's removed when the room closes or fills, and readers skip entries older than 2 minutes
-  (nothing on the server cleans up after a game that vanished).
+  games aren't listed. Each account has one listing, under the key `game` (the room code is in its value), overwritten
+  by every game it hosts. It carries a timestamp and is refreshed every 30 s while the game has room (players can join
+  a game in progress); it's removed when the room closes or fills, and readers skip entries older than 2 minutes
+  (nothing on the server cleans up after a game that vanished). If the server says an account has too many listings
+  (left by older versions), the game deletes that account's own and lists again.
 
 The server runs no game code (no modules to install): all players' games simulate the same tank in lockstep. Traffic
 is small: a few KB/s per player. A 1-CPU, 1 GB VPS is plenty.
@@ -101,9 +103,11 @@ Every request has a `User-Agent: InsaniquariumRemod/<version>` header. Paths the
 |---|---|---|
 | `/healthcheck` | GET | the connection test |
 | `/v2/account/authenticate/custom?create=true` | POST | login (HTTP Basic: the server key as user, empty password; body `{"id": "<device id>"}`) |
-| `/v2/storage` | PUT | listing a game (`remod_lobbies`, public read, owner write) |
-| `/v2/storage/delete` | PUT | unlisting it |
+| `/v2/storage` | PUT | listing a game (`remod_lobbies`, key `game`, public read, owner write) |
+| `/v2/storage/delete` | PUT | unlisting it (or the account's old listings) |
 | `/v2/storage/remod_lobbies?limit=100` | GET | **Find games** |
+| `/v2/account` | GET | the account's own id, only when old listings must be cleared |
+| `/v2/storage/remod_lobbies?user_id=...&limit=100` | GET | the account's own listings, only then |
 | `/ws?lang=en&status=false&format=json&token=...` | GET (WebSocket) | the game connection: `match_create` (by room name), `match_data_send`, `match_leave`; it receives `match`, `match_presence_event`, `match_data` |
 
 Messages are at most about 2.5 KB each (bigger ones, like the game state a joining player gets, are sent in pieces),
@@ -134,7 +138,7 @@ The module is a Lua file in `server/modules/` (mounted at `/nakama/data/modules`
 
 ## Running it
 - **Logs:** `docker compose logs -f nakama`
-- **Admin console:** `http://127.0.0.1:7351` on the server (accounts, live matches, the `lobbies` storage). From your
+- **Admin console:** `http://127.0.0.1:7351` on the server (accounts, live matches, the `remod_lobbies` storage). From your
   own computer: `ssh -L 7351:127.0.0.1:7351 you@server`, then open `http://127.0.0.1:7351`. Don't expose port 7351.
 - **Stop / start:** `docker compose down` / `docker compose up -d` (add the `-f` files if you use Caddy). Containers
   restart by themselves after a reboot.

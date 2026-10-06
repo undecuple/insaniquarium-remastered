@@ -29,9 +29,11 @@ struct Setting
     bool restart;
 };
 
-static std::vector<Setting> tabs[5];
-static const char* TabNames[5] = { "Display", "Gameplay", "Mutators", "Mods", "About" };
-static const int TabCount = 5, AboutTab = 4;
+static std::vector<Setting> tabs[6];
+static const char* TabNames[6] = { "Display", "Gameplay", "Mutators", "Keys", "Mods", "About" };
+static const int TabCount = 6, KeysTab = 3, ModsTab = 4, AboutTab = 5;
+static int capturing = -1;   // the Keys tab's row waiting for a key (-1: none)
+static int openKey = VK_F2;
 static int tab, hover = -1;
 static bool open, needRestart;
 static std::string modsDir;
@@ -80,6 +82,19 @@ static void Build()
         { "Decay", "mutators", "decay", "Dead fish float until you click them away, and make the others hungry.", {}, "0", false },
         { "Gadgets", "mutators", "gadgets", "Buy an auto-feeder, a coin magnet and an alien alarm in each tank (top left).", {}, "0", false },
     };
+    // keys: Windows key codes in the ini (0 = no key); the value is the key's name, a click waits for a new key
+    tabs[KeysTab] = {
+        { "Settings page", "settings", "open_key", "Opens these settings, anywhere.", {}, "113", false },
+        { "Co-op screen", "coop", "open_key", "Opens the co-op screen on the main menu.", {}, "118", false },
+        { "Achievements", "achievements", "open_key", "Opens the list of achievements.", {}, "115", false },
+        { "Screensaver", "screensaver", "key", "Starts the screensaver on the main menu.", {}, "122", false },
+        { "Screenshot", "screenshot", "key", "Saves a screenshot in the game folder's screenshots folder.", {}, "123", false },
+        { "Pause", "timecontrol", "pause", "Pauses or resumes the tank (in co-op: the host, for everyone).", {}, "116", false },
+        { "Slower (0.75x)", "timecontrol", "slow", "Slows the tank down, or back to normal speed.", {}, "117", false },
+        { "Faster (2x)", "timecontrol", "fast", "Speeds the tank up, or back to normal speed.", {}, "119", false },
+        { "Frame counter", "fps", "key", "Shows or hides the frame counter.", {}, "114", false },
+        { "Pause menu", "timecontrol", "menu", "The game's own pause dialog in a tank (Space in the original game).", {}, "32", false },
+    };
     // the loaded-mods screen: every DLL in the mods folder with its state (the core's list)
     static std::vector<std::string> names, descriptions;
     names.clear(); descriptions.clear(); modState.clear();
@@ -93,9 +108,9 @@ static void Build()
         descriptions.push_back(d && *d ? d : "A mod without a description.");
         modState.push_back(st);
     }
-    tabs[3].clear();
+    tabs[ModsTab].clear();
     for (size_t i = 0; i < names.size(); i++)
-        tabs[3].push_back({ names[i].c_str(), "mods", names[i].c_str(), descriptions[i].c_str(), {}, "1", true });
+        tabs[ModsTab].push_back({ names[i].c_str(), "mods", names[i].c_str(), descriptions[i].c_str(), {}, "1", true });
 }
 
 
@@ -108,10 +123,10 @@ using ui::In;
 static int ModCols() { return modState.size() <= 16 ? 2 : 3; }
 static int ModRows() { int c = ModCols(); return (std::max)(1, ((int)modState.size() + c - 1) / c); }
 static int ModRowH() { return (std::min)(44, (DY + DH - 92 - 22 - (TabY + 36)) / ModRows()); }
-static int Columns(int t) { return t == 3 ? ModCols() : t == 2 ? 3 : t == 0 ? 1 : 2; }
+static int Columns(int t) { return t == ModsTab ? ModCols() : t == 2 ? 3 : t == 0 ? 1 : 2; }
 static RECT RowRect(int t, int i)
 {
-    if (t == 3)
+    if (t == ModsTab)
     {
         int rows = ModRows(), h = ModRowH(), w = CW / ModCols(), x = CX + (i / rows) * w, y = TabY + 36 + (i % rows) * h;
         return { x, y, x + w - 6, y + h };
@@ -122,21 +137,22 @@ static RECT RowRect(int t, int i)
     return { x, y, x + w - 6, y + 44 };
 }
 // top right of the Mods tab (its third column is free up to 10 mods; with more, below the rows)
+static RECT ResetKeysRect() { int y = DY + DH - 92 - 20; return { CX + CW - 170, y, CX + CW, y + 26 }; }   // the Keys tab, under the rows
 static RECT RestartRect() { int y = DY + DH - 92 - 20; return { CX + CW - 200, y, CX + CW, y + 26 }; }   // under the rows, right
 static bool Pending(size_t i)   // a mod's switch differs from what's running: a restart applies it
 {
     if (i >= modState.size()) return false;
-    bool want = Get(tabs[3][i]) != "0";
+    bool want = Get(tabs[ModsTab][i]) != "0";
     return (modState[i] == REMOD_MOD_ON) != want && modState[i] != REMOD_MOD_CRASHED && modState[i] != REMOD_MOD_BROKEN;
 }
 // the Mods tab: a running mod that exports RemodOpen() (its own screen or settings) gets an Open button on its row
-static std::string DllOf(size_t i) { return std::string(tabs[3][i].label) + ".dll"; }
+static std::string DllOf(size_t i) { return std::string(tabs[ModsTab][i].label) + ".dll"; }
 static bool CanOpen(size_t i) { return i < modState.size() && modState[i] == REMOD_MOD_ON && ui::Has(DllOf(i).c_str(), "RemodOpen"); }
 static RECT OpenRect(const RECT& r) { int h = (std::min)(28, (int)(r.bottom - r.top) - 4); int y = r.top + ((r.bottom - r.top) - h) / 2; return { r.right - 54, y, r.right, y + h }; }
 static bool AnyPending() { for (size_t i = 0; i < modState.size(); i++) if (Pending(i)) return true; return false; }
 static const char* StateText(size_t i)
 {
-    bool want = Get(tabs[3][i]) != "0";
+    bool want = Get(tabs[ModsTab][i]) != "0";
     switch (modState[i])
     {
         case REMOD_MOD_ON: return want ? "on" : "off after restart";
@@ -165,6 +181,7 @@ static void Open(int startTab = -1)
 static void Closed()
 {
     open = false;
+    capturing = -1;
     api->config_changed();
     if (needRestart) api->toast("Some changes apply after you restart the game");
     api->redraw();
@@ -211,7 +228,7 @@ static void PageClick(int x, int y)
     else if (In(Big2, x, y)) Open();
     else if (In(Pill, x, y)) { page = false; api->redraw(); }
     else if (In(Left, x, y)) Open(AboutTab);
-    else if (In(Center, x, y)) Open(3);
+    else if (In(Center, x, y)) Open(ModsTab);
     else if (In(Right, x, y)) go("extramodes.dll", "RecordsOpen");
 }
 
@@ -247,9 +264,17 @@ static int Mouse(int x, int y, int button, int down)
     }
     if (!Dialog()) { open = false; return 0; }
     if (y >= DY + DH - 70) return 0;   // the DONE button belongs to the dialog
+    if (down && button == 1 && tab == KeysTab)   // right click: that key back to its default
+    {
+        for (auto& it : tabs[KeysTab])
+            if (In(RowRect(KeysTab, (int)(&it - &tabs[KeysTab][0])), x, y)) { api->config_set(it.section, it.key, it.def); api->config_changed(); }
+        capturing = -1;
+        api->redraw();
+        return 1;
+    }
     if (!down || button != 0) return In(RECT{ DX, DY, DX + DW, DY + DH }, x, y) ? 1 : 0;
-    for (int i = 0; i < TabCount; i++) if (In(TabRect(i), x, y)) { tab = i; hover = -1; api->redraw(); return 1; }
-    if (tab == 3 && AnyPending() && In(RestartRect(), x, y))
+    for (int i = 0; i < TabCount; i++) if (In(TabRect(i), x, y)) { tab = i; hover = -1; capturing = -1; api->redraw(); return 1; }
+    if (tab == ModsTab && AnyPending() && In(RestartRect(), x, y))
     {
         ui::KillDialog(api, DialogId);
         open = false;
@@ -257,9 +282,9 @@ static int Mouse(int x, int y, int button, int down)
         api->restart();
         return 1;
     }
-    if (tab == 3)
-        for (size_t i = 0; i < tabs[3].size(); i++)
-            if (CanOpen(i) && In(OpenRect(RowRect(3, (int)i)), x, y))
+    if (tab == ModsTab)
+        for (size_t i = 0; i < tabs[ModsTab].size(); i++)
+            if (CanOpen(i) && In(OpenRect(RowRect(ModsTab, (int)i)), x, y))
             {
                 ui::KillDialog(api, DialogId);
                 open = false;
@@ -267,6 +292,22 @@ static int Mouse(int x, int y, int button, int down)
                 ui::Call(dll.c_str(), "RemodOpen");
                 return 1;
             }
+    if (tab == KeysTab)
+    {
+        if (In(ResetKeysRect(), x, y))   // every key back to its default
+        {
+            for (auto& it : tabs[KeysTab]) api->config_set(it.section, it.key, it.def);
+            capturing = -1;
+            api->config_changed();
+            api->play_sound(13);
+            api->redraw();
+            return 1;
+        }
+        for (size_t i = 0; i < tabs[tab].size(); i++)
+            if (In(RowRect(tab, (int)i), x, y)) { capturing = capturing == (int)i ? -1 : (int)i; api->redraw(); return 1; }
+        capturing = -1;
+        return 1;
+    }
     if (tab != AboutTab)
         for (size_t i = 0; i < tabs[tab].size(); i++)
             if (In(RowRect(tab, (int)i), x, y)) { Toggle(tabs[tab][i]); api->redraw(); return 1; }
@@ -275,8 +316,20 @@ static int Mouse(int x, int y, int button, int down)
 
 static int Key(int vk, int down)
 {
+    if (open && capturing >= 0 && tab == KeysTab)   // the Keys tab waits for a key: it's taken, not passed on
+    {
+        if (!down) return 1;
+        if (vk == VK_SHIFT || vk == VK_CONTROL || vk == VK_MENU || vk == VK_LWIN || vk == VK_RWIN) return 1;   // not alone
+        Setting& it = tabs[KeysTab][capturing];
+        if (vk == VK_BACK || vk == VK_DELETE) api->config_set(it.section, it.key, "0");
+        else if (vk != VK_ESCAPE) api->config_set(it.section, it.key, std::to_string(vk).c_str());
+        capturing = -1;
+        api->config_changed();
+        api->redraw();
+        return 1;
+    }
     if (!down) return 0;
-    if (vk == VK_F2 && !open && !Coop()) { page = false; Open(); return 1; }
+    if (vk == openKey && openKey && !open && !Coop()) { page = false; Open(); return 1; }
     if (vk == VK_ESCAPE && page && !open && ui::DialogCount(api) == 0) { page = false; api->redraw(); return 1; }
     return 0;
 }
@@ -292,13 +345,15 @@ static void DrawSettings(void* g)
         int y = TabY + 54;
         api->draw_text_font(g, f12, "Insaniquarium - Remastered Mod " REMOD_VERSION, CX, y, ui::Yellow);
         y = ui::WrapText(api, g, f10, "An unofficial fan mod for Insaniquarium! Deluxe 1.1, not affiliated with PopCap Games or EA.", CX, y + 18, CW, ui::White) + 6;
-        static const char* const Lines[] = {
-            "F2: these settings (anywhere).  F7: co-op (on the main menu).",
+        std::string keys = ui::KeyName(openKey) + ": these settings (anywhere).  " +
+                           ui::KeyName(api->config_int("coop", "open_key", VK_F7)) + ": co-op (on the main menu).  Every key: the Keys tab.";
+        const std::string Lines[] = {
+            keys,
             "Hold Shift while the game starts to play without mods this time.",
             "Everything the mod does is written to mods\\remastered-mod.log in the game folder.",
             "MIT licence. Uses MinHook (BSD-2-Clause). Insaniquarium and its art belong to PopCap Games.",
         };
-        for (const char* l : Lines) y = ui::WrapText(api, g, f10, l, CX, y + 4, CW, ui::Cream, 2) + 2;
+        for (auto& l : Lines) y = ui::WrapText(api, g, f10, l, CX, y + 4, CW, ui::Cream, 2) + 2;
         return;
     }
     const char* help = nullptr;
@@ -312,8 +367,20 @@ static void DrawSettings(void* g)
         if (over) help = it.help;
         std::string v = Get(it);
         int rh = r.bottom - r.top;
-        int tx = r.left + 6, labelY = tab == 3 ? r.top + (rh >= 40 ? 22 : rh / 2 - 1) : r.top + 28, right = r.right;
-        if (it.choices.empty())
+        int tx = r.left + 6, labelY = tab == ModsTab ? r.top + (rh >= 40 ? 22 : rh / 2 - 1) : r.top + 28, right = r.right;
+        if (tab == KeysTab)
+        {
+            int vk = atoi(v.c_str());
+            bool clash = false;   // the same key on another row
+            for (size_t j = 0; j < tabs[KeysTab].size(); j++)
+                if (j != i && vk && atoi(Get(tabs[KeysTab][j]).c_str()) == vk) clash = true;
+            std::string shown = capturing == (int)i ? "Press a key..." : ui::KeyName(vk);
+            RECT vr = ValueRect(r, shown.c_str());
+            ui::Button(api, g, vr, shown.c_str(), ui::Look::Center, true, capturing == (int)i);
+            if (clash && capturing != (int)i) { api->draw_text_font(g, f10, "!", vr.left - 12, vr.top + 19, 0xffff6060); if (over) help = "This key is also used by another row: pick a different one."; }
+            right = vr.left - 14;
+        }
+        else if (it.choices.empty())
         {
             void* img = v != "0" ? checked : unchecked;
             if (rh >= 44 || api->version < 7) { api->draw_image(g, img, r.left, r.top + (44 - ui::ImgH(img)) / 2); tx = r.left + ui::ImgW(img) + 4; }
@@ -332,23 +399,25 @@ static void DrawSettings(void* g)
             ui::Button(api, g, vr, shown, ui::Look::Center);
             right = vr.left - 6;
         }
-        if (tab == 3 && CanOpen(i)) { RECT orr = OpenRect(r); ui::Button(api, g, orr, "Open", ui::Look::Center); right = orr.left - 4; }
-        void* font = cols == 3 || tab == 3 ? f10 : f12;
+        if (tab == ModsTab && CanOpen(i)) { RECT orr = OpenRect(r); ui::Button(api, g, orr, "Open", ui::Look::Center); right = orr.left - 4; }
+        void* font = cols == 3 || tab == ModsTab ? f10 : f12;
         ui::FitText(api, g, font, it.label, tx, labelY, right - tx, over ? ui::White : ui::Cream);
-        if (tab == 3 && i < modState.size())
+        if (tab == ModsTab && i < modState.size())
         {
             unsigned col = modState[i] == REMOD_MOD_ON && !Pending(i) ? 0xff9cf09c : Pending(i) ? 0xffffe060 : 0xffffb0a0;
             ui::FitText(api, g, f10, StateText(i), tx, labelY + (rh >= 40 ? 14 : 12), right - tx, col);
         }
     }
-    if (tab == 3 && tabs[3].empty()) api->draw_text_font(g, f12, "No other mods installed.", CX, TabY + 60, ui::White);
-    if (tab == 3 && AnyPending()) ui::Button(api, g, RestartRect(), "Restart the game now", ui::Look::Center);
+    if (tab == ModsTab && tabs[ModsTab].empty()) api->draw_text_font(g, f12, "No other mods installed.", CX, TabY + 60, ui::White);
+    if (tab == ModsTab && AnyPending()) ui::Button(api, g, RestartRect(), "Restart the game now", ui::Look::Center);
+    if (tab == KeysTab) ui::Button(api, g, ResetKeysRect(), "Reset all keys", ui::Look::Center);
     // the help line for the row under the pointer (wrapped, two lines at most)
     std::string line = help ? help : (tab == 2 ? "Mutators apply from the next level you start."
-                                    : tab == 3 ? "Click a mod to switch it off or on: it changes when the game restarts. Open: the mod's own screen." : "Click a setting to change it.");
-    if (help && tab != 2 && tab != 3)
+                                    : tab == ModsTab ? "Click a mod to switch it off or on: it changes when the game restarts. Open: the mod's own screen."
+                                    : tab == KeysTab ? (capturing >= 0 ? "Press the new key. Esc: keep the old one. Backspace: no key." : "Click a key to change it. Right-click: back to its default.") : "Click a setting to change it.");
+    if (help && tab != 2 && tab != ModsTab && tab != KeysTab)
         for (auto& it : tabs[tab]) if (it.help == help && it.restart) line += " (applies after a restart)";
-    ui::WrapText(api, g, f10, line, CX, helpY, tab == 3 && AnyPending() ? CW - 210 : CW, ui::Cream, 2);
+    ui::WrapText(api, g, f10, line, CX, helpY, (tab == ModsTab && AnyPending()) || tab == KeysTab ? CW - 180 : CW, ui::Cream, 2);
 }
 
 static int lastHover = -1;
@@ -373,7 +442,7 @@ static void Overlay(void* g)
     if (h != lastHover) { lastHover = h; if (open || page) api->redraw(); }
 }
 
-static void Changed() {}
+static void Changed() { openKey = api->config_int("settings", "open_key", VK_F2); }
 
 extern "C" __declspec(dllexport) const char* RemodDescribe() { return "The settings page (F2) and the main menu's Remastered page."; }
 
@@ -392,5 +461,6 @@ extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
     api->on_key(Key);
     api->on_overlay(Overlay);
     api->on_config(Changed);
+    Changed();
     return 1;
 }

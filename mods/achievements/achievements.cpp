@@ -288,7 +288,8 @@ static int Mouse(int x, int y, int button, int down)
 
 static int Key(int vk, int down)
 {
-    if (down && vk == VK_F4 && !open && !ui::CoopPlaying()) { Open(); return 1; }
+    int k = api->config_int("achievements", "open_key", VK_F4);   // the Keys tab of the settings
+    if (down && k && vk == k && !open && !ui::CoopPlaying()) { Open(); return 1; }
     return 0;
 }
 
