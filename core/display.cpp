@@ -227,7 +227,7 @@ void TakeGameCursors(bool native)
         if (native && images[i]) { gGameCursorImage[i] = images[i]; images[i] = nullptr; }
         else if (!native && !images[i] && gGameCursorImage[i]) images[i] = gGameCursorImage[i];
     }
-    if (!native || gCursorFailed || gCursorScale == gScale) return;
+    if (!native || gCursorFailed || gScale <= 0 || gCursorScale == gScale) return;
     gCursorScale = gScale;
     for (int i = 0; i < CursorKinds; i++)
     {
@@ -296,6 +296,7 @@ HRESULT BltCommon(int v, void* self, RECT* dst, void* src, RECT* srcRect, DWORD 
     if (self != gPrimary[v] || !gOn || !gWnd || !dst || !src) return blt(self, dst, src, srcRect, flags, fx);
     // switched to fullscreen in the game's options: leave it alone, and redo the window when it comes back windowed
     if (!CoreGameWindowed()) { gWindowDone = false; TakeGameCursors(false); return blt(self, dst, src, srcRect, flags, fx); }
+    if (gWindowDone && IsIconic(gWnd)) return blt(self, dst, src, srcRect, flags, fx);   // minimised: nothing to show, keep the layout
     if (!gWindowDone) MakeWindowNative();
     else Layout();
     if (gRealSetCursor) TakeGameCursors(true);
@@ -393,6 +394,14 @@ void DisplayInit()
         gNeedSwitch = true;   // this session starts fullscreen: the core switches the game to windowed once it runs
         CoreLog("native window: the game was set to fullscreen; switching it to windowed");
     }
+}
+
+void DisplayInitScreenSaver()
+{
+    gOn = gBorderless = true;
+    gInteger = CoreConfigString("display", "scale", "fit") == "integer";
+    if (void* prev = PatchImport("user32.dll", "GetCursorPos", (void*)&GameGetCursorPos)) gRealGetCursorPos = (GetCursorPosFn)prev;
+    if (void* prev = PatchImport("user32.dll", "SetCursor", (void*)&GameSetCursor)) gRealSetCursor = (SetCursorFn)prev;
 }
 
 void DisplayOnDirectDraw(void* dd7, void* dd1)

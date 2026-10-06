@@ -63,7 +63,7 @@ Step by step for Windows, Linux and Steam Deck: **[docs/INSTALL.md](docs/INSTALL
 | **fps** | A frame counter in the top-left corner | **F3** |
 | **screenshot** | Saves the game window as a PNG in the game folder's `screenshots` folder | **F12** |
 | **timecontrol** | Pause the game, or play at 0.75x or 2x speed. A small label in the corner shows the speed. Works in every mode that has a tank (Adventure, Time Trial, Challenge, Virtual Tank); menus always run at normal speed. In co-op only the host can change it, for everyone | **F5** pause / resume, **F6** 0.75x (again: normal), **F8** 2x (again: normal) |
-| **screensaver** | Watch your Virtual Tank as the game's own screensaver: **Open** on the Mods page, or **F11** on the main menu (saves your profile, starts it and closes the game). On Linux and the Steam Deck it runs inside the game's Proton prefix, so it finds your saves with no extra setup | **F11** |
+| **screensaver** | Watch your Virtual Tank as the game's own screensaver: **Open** on the Mods page, or **F11** on the main menu. It fills the screen in a window (no screen-mode switch, which fails on some Linux desktops) while the game waits minimised, and the game comes back when you move the mouse or press a key. On Linux and the Steam Deck it runs inside the game's own Proton prefix, so it finds your saves | **F11** |
 
 **The Remastered page:** the **Remastered** button on the main menu (bottom left) turns the menu's button panel into
 the mod's: **Co-op**, **Extra Modes**, **Achievements**, **Mod Settings**, **About**, **Mods** (the loaded mods,
@@ -174,7 +174,7 @@ key=123            ; F12
 
 [screensaver]
 key=122            ; F11 on the main menu (0 = no key)
-quit=1             ; 0 = keep the game running while the screensaver shows
+quit=0             ; 1 = close the game while the screensaver shows (under Steam that ends the screensaver too)
 
 [timecontrol]
 pause=116          ; keys as Windows key codes: 116 = F5, 117 = F6, 119 = F8

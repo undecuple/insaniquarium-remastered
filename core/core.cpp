@@ -28,6 +28,7 @@ namespace {
 std::string gGameDir, gModsDir;
 FILE* gLog;
 bool gActive;   // the exe matched: hooks and mods are on
+bool gScreenSaver;   // this copy of the game runs as the screensaver (-screensaver, started by the screensaver mod): no mods, windowed
 
 // every callback remembers the mod that registered it, so a mod that crashes can be switched off
 template <typename F> struct Cb { F fn; HMODULE owner; };
@@ -529,6 +530,16 @@ void __fastcall UpdateFrames(void* app, void*)
     oUpdateFrames(app);
 }
 
+// the screensaver copy: windowed whatever the settings say (the fullscreen mode switch fails on some Linux desktops);
+// the native window then covers the screen
+using ReadFromRegistryFn = void(__thiscall*)(void*);
+ReadFromRegistryFn oReadFromRegistry;
+void __fastcall ReadFromRegistry(void* app, void*)
+{
+    oReadFromRegistry(app);
+    at<bool>(app, App_mIsWindowed) = true;
+}
+
 extern "C" void* oDrawScreen;
 void* oDrawScreen;
 
@@ -717,7 +728,7 @@ void BackupSaves()
 bool gModsLoaded;
 void EnsureModsLoaded()
 {
-    if (gModsLoaded || !gActive) return;
+    if (gModsLoaded || !gActive || gScreenSaver) return;
     gModsLoaded = true;
     BackupSaves();
     LoadMods();
@@ -747,7 +758,10 @@ void Start(HMODULE self)
     CreateDirectoryA(gModsDir.c_str(), nullptr);
     // the game's own screensaver (WinFish_Scr.exe) loads this DLL too and is turned away by the game check below: it adds to
     // the log instead of starting it again, so the game's log is kept
-    gLog = fopen((gModsDir + "\\remastered-mod.log").c_str(), file == "winfish_scr.exe" ? "a" : "w");
+    std::string cmd = GetCommandLineA();
+    for (auto& ch : cmd) ch = (char)tolower(ch);
+    gScreenSaver = cmd.find("-screensaver") != std::string::npos;
+    gLog = fopen((gModsDir + "\\remastered-mod.log").c_str(), file == "winfish_scr.exe" || gScreenSaver ? "a" : "w");
     Log("Insaniquarium - Remastered Mod core (API %d)", REMOD_API_VERSION);
     char rp[MAX_PATH] = "";
     if (gReal) GetModuleFileNameA(gReal, rp, MAX_PATH);
@@ -763,8 +777,11 @@ void Start(HMODULE self)
            && Hook((void*)Board_Draw, (void*)&BoardDraw, (void**)&oBoardDraw)
            && Hook((void*)WidgetManager_DrawScreen, (void*)&DrawScreenDetour, &oDrawScreen)
            && Hook((void*)App_UpdateFrames, (void*)&UpdateFrames, (void**)&oUpdateFrames);
+    if (gActive && gScreenSaver)
+        gActive = Hook((void*)App_ReadFromRegistry, (void*)&ReadFromRegistry, (void**)&oReadFromRegistry);
     Log(gActive ? "hooks installed" : "hooks failed: mods stay off");
-    if (gActive) DisplayInit();
+    if (gActive && gScreenSaver) { Log("screensaver: this copy runs the screensaver (no mods, in a window covering the screen)"); DisplayInitScreenSaver(); }
+    else if (gActive) DisplayInit();
 }
 
 }  // namespace

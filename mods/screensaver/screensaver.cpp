@@ -1,6 +1,7 @@
 // screensaver: watch your Virtual Tank as the game's own screensaver, started from the game. The Mods page's Open button
-// (or F11 on the main menu) saves your profile, starts WinFish_Scr.exe -screensaver from the game folder and minimises the
-// game (which pauses itself) until the screensaver ends, then brings it back. Because the screensaver starts from inside
+// (or F11 on the main menu) saves your profile, starts the game's own exe in its screensaver mode (-screensaver: what
+// WinFish_Scr.exe is built from) and minimises the game (which pauses itself) until the screensaver ends, then brings it
+// back. Because the screensaver starts from inside
 // the running game, on Linux and the Steam Deck it runs in the game's own Proton prefix and finds your saves: no shortcut
 // of its own, no shared folders to set up. The game keeps running on purpose: under Steam, once the game closes Steam ends
 // everything it started, the screensaver included. [screensaver] key=122 (F11; 0 = no key), quit=0 (1 = close the game).
@@ -25,35 +26,25 @@ static void Load()
     quitGame = api->config_int("screensaver", "quit", 0) != 0;
 }
 
-// the game folder: this DLL is <game>\mods\screensaver.dll
-static std::string GameFolder()
-{
-    HMODULE self = nullptr;
-    GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)&GameFolder, &self);
-    char path[MAX_PATH];
-    GetModuleFileNameA(self, path, MAX_PATH);
-    std::string p = path;
-    p = p.substr(0, p.find_last_of("\\/"));    // ...\mods
-    return p.substr(0, p.find_last_of("\\/"));  // the game folder
-}
-
 static void Start()
 {
     if (ui::CoopPlaying()) { api->toast("Not during a co-op game"); return; }
-    std::string dir = GameFolder(), exe = dir + "\\WinFish_Scr.exe";
-    if (GetFileAttributesA(exe.c_str()) == INVALID_FILE_ATTRIBUTES) { api->toast("The game's screensaver (WinFish_Scr.exe) isn't in the game folder"); api->log("screensaver: no %s", exe.c_str()); return; }
     if (void* a = api->app()) reinterpret_cast<bool(__thiscall*)(void*)>(App_SaveProfile)(a);   // the screensaver reads the same profile
-    std::string cmd = "\"" + exe + "\" -screensaver";   // what the game's Insaniquarium.scr passes it
+    // the game's own exe in its screensaver mode, with the same command line (the Steam release's -changedir included):
+    // Insaniquarium - Remastered Mod loads in it too and keeps it in a window covering the screen (the screensaver's
+    // fullscreen mode switch fails on some Linux desktops), with no mods
+    std::string cmd = std::string(GetCommandLineA()) + " -screensaver";
     STARTUPINFOA si{}; si.cb = sizeof si;
     PROCESS_INFORMATION pi{};
-    if (!CreateProcessA(exe.c_str(), &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, dir.c_str(), &si, &pi))
+    if (!CreateProcessA(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi))
     {
         api->toast("Couldn't start the screensaver");
         api->log("screensaver: CreateProcess failed (%lu)", GetLastError());
         return;
     }
+    AllowSetForegroundWindow(pi.dwProcessId);
     CloseHandle(pi.hThread);
-    api->log("screensaver: started %s", exe.c_str());
+    api->log("screensaver: started %s", cmd.c_str());
     HWND wnd = nullptr;
     if (void* a = api->app()) wnd = at<HWND>(a, 0x350);
     if (quitGame)

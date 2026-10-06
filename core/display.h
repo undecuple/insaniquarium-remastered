@@ -2,7 +2,8 @@
 #pragma once
 #include <windows.h>
 
-void DisplayInit();                             // reads [display], forces windowed mode for the next start
+void DisplayInit();
+void DisplayInitScreenSaver();                 // the screensaver copy: a borderless window covering the screen                             // reads [display], forces windowed mode for the next start
 void DisplayOnDirectDraw(void* dd7, void* dd1); // a DirectDraw object was created: wrap CreateSurface
 void DisplaySetWindow(HWND w);                  // the game's window
 bool DisplayNeedsSwitch();                      // once: the game started fullscreen: switch it to windowed now

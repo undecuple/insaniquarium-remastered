@@ -47,6 +47,7 @@ Addresses are in `include/game.h` (names below are its constants); field offsets
 | **timecontrol** | `Board_Pause`; `App_mFrameTime` |
 | **fps** | nothing in the game (overlay) |
 | **screenshot** | nothing in the game: the core's `capture_frame` (the game's frame surface), GDI as a fallback |
+| **screensaver** | `App_SaveProfile`, the game window (`App` +0x350); starts the game's own exe with `-screensaver`, where the core hooks `App_ReadFromRegistry` (WinFishApp's: it clears `App_mIsWindowed` in screensaver mode) to keep that copy windowed |
 
 Several mods hook the same function (e.g. `Board_BuyItem`, `Coin_MouseDown`); the core chains them.
 
