@@ -47,6 +47,7 @@ std::vector<ModInfo> gMods;
 std::string gToast;
 DWORD gToastUntil;   // GetTickCount() when the toast goes away (0: not shown yet)
 bool gToastUntilInput;   // the toast stays until the player clicks or presses a key (the start-up message)
+bool gToastTop;   // drawn at the top (the start-up message: at the bottom it would cover the title screen's "Click here to play!")
 bool gRedraw;        // repaint everything at the next frame
 WNDPROC gOrigWndProc;
 
@@ -315,7 +316,7 @@ int Hook(void* target, void* detour, void** original)
     return 1;
 }
 
-void Toast(const char* text) { gToast = text; gToastUntil = 0; gToastUntilInput = false; gRedraw = true; Log("toast: %s", text); }   // 3 s from when it first shows
+void Toast(const char* text) { gToast = text; gToastUntil = 0; gToastUntilInput = false; gToastTop = false; gRedraw = true; Log("toast: %s", text); }   // 3 s from when it first shows
 void Redraw() { gRedraw = true; }
 void MousePos(int* x, int* y) { if (x) *x = gMouseX; if (y) *y = gMouseY; }
 void PlayGameSound(int id)
@@ -548,8 +549,9 @@ extern "C" void __cdecl AfterDrawScreen(void* wm, int drew)
         if (toast)
         {
             int w = TextWidth(gToast.c_str()) + 24;
-            FillRect(g, (640 - w) / 2, 396, w, 26, 0xc0101840);
-            DrawText(g, gToast.c_str(), (640 - w) / 2 + 12, 414, 0xffffff80);
+            int y = gToastTop ? 6 : 396;
+            FillRect(g, (640 - w) / 2, y, w, 26, 0xc0101840);
+            DrawText(g, gToast.c_str(), (640 - w) / 2 + 12, y + 18, 0xffffff80);
         }
         reinterpret_cast<GraphicsDtorFn>(Graphics_dtor)(g);
     }
@@ -658,6 +660,7 @@ void LoadMods()
     snprintf(t, sizeof t, "Insaniquarium - Remastered Mod is on (%d mod%s)", n, n == 1 ? "" : "s");
     Toast(t);
     gToastUntilInput = true;   // past the loading screen: until the player first clicks
+    gToastTop = true;
 }
 
 // copies a folder tree (for the save backup)
@@ -679,13 +682,33 @@ bool CopyTree(const std::string& from, const std::string& to)
     return ok;
 }
 
-// the first time mods run, keep a copy of the player's saves (ProgramData\PopCap Games\Insaniquarium\userdata)
+// the first time mods run, keep a copy of the player's saves (userdata in the game's data folder: ProgramData\PopCap
+// Games\Insaniquarium, or ProgramData\Steam\Insaniquarium for the Steam release)
 void BackupSaves()
 {
     char base[MAX_PATH];
     if (SHGetFolderPathA(nullptr, CSIDL_COMMON_APPDATA, nullptr, 0, base) != S_OK) return;
-    std::string dir = std::string(base) + "\\PopCap Games\\Insaniquarium";
+    std::string old = std::string(base) + "\\PopCap Games\\Insaniquarium";
+    std::string dir = ReadString(G_AppDataFolder);
+    while (!dir.empty() && (dir.back() == '\\' || dir.back() == '/')) dir.pop_back();
+    if (dir.empty()) dir = old;
     std::string saves = dir + "\\userdata", backup = dir + "\\userdata-before-remastered-mod";
+    // earlier versions kept the mods' own files (achievements, records, layouts) in PopCap Games\Insaniquarium\userdata
+    // even for the Steam release: move them over to where the game saves (never over a newer file)
+    if (_stricmp(dir.c_str(), old.c_str()) != 0)
+    {
+        WIN32_FIND_DATAA fd;
+        HANDLE it = FindFirstFileA((old + "\\userdata\\*.txt").c_str(), &fd);
+        if (it != INVALID_HANDLE_VALUE)
+        {
+            CreateDirectoryA(saves.c_str(), nullptr);
+            do
+                if (CopyFileA((old + "\\userdata\\" + fd.cFileName).c_str(), (saves + "\\" + fd.cFileName).c_str(), TRUE))
+                    Log("copied %s from %s\\userdata", fd.cFileName, old.c_str());
+            while (FindNextFileA(it, &fd));
+            FindClose(it);
+        }
+    }
     if (GetFileAttributesA(saves.c_str()) == INVALID_FILE_ATTRIBUTES) { Log("no saves yet (%s)", saves.c_str()); return; }
     if (GetFileAttributesA(backup.c_str()) != INVALID_FILE_ATTRIBUTES) return;   // made on an earlier run
     Log(CopyTree(saves, backup) ? "saves backed up to %s" : "couldn't back up the saves to %s", backup.c_str());

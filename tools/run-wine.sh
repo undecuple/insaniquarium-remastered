@@ -131,6 +131,10 @@ eval "$KILL"
 sleep 1; pkill -f "$(basename "$T").game.Insaniquarium\.ex[e]" 2>/dev/null || true
 EOF
 SCREEN=${SCREEN:-800x600x24}   # the game runs windowed (see WINDOWED), so it isn't scaled
-GAMEDIR="$T/game" T="$T" xvfb-run -a -s "-screen 0 $SCREEN" bash "$T/steps.sh" "$@" || true
+if [ -n "${REALDISPLAY:-}" ]; then   # REALDISPLAY=:0: on your own screen instead of a hidden one (the window shows and takes focus)
+  GAMEDIR="$T/game" T="$T" DISPLAY="$REALDISPLAY" bash "$T/steps.sh" "$@" || true
+else
+  GAMEDIR="$T/game" T="$T" xvfb-run -a -s "-screen 0 $SCREEN" bash "$T/steps.sh" "$@" || true
+fi
 echo "---- mods/remastered-mod.log"
 cat "$T/game/mods/remastered-mod.log" 2>/dev/null || echo "(no log: ddraw.dll was not loaded)"

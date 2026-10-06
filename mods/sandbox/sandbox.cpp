@@ -293,9 +293,7 @@ extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {
     if (a->version < 4) return 0;
     api = a;
-    char base[MAX_PATH];
-    if (SHGetFolderPathA(nullptr, CSIDL_COMMON_APPDATA, nullptr, 0, base) != S_OK) return 0;
-    userdata = std::string(base) + "\\PopCap Games\\Insaniquarium\\userdata";
+    userdata = ui::UserData();   // the game's own save folder (ProgramData\Steam\Insaniquarium\userdata for the Steam release)
     Settings();
     if (!api->hook((void*)GameObject_TickHunger, (void*)&TickHunger, (void**)&oTickHunger)
         || !api->hook((void*)App_DoTimedDialog, (void*)&DialogHook, (void**)&oDialog)) return 0;
