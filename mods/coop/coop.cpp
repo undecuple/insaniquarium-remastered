@@ -1181,24 +1181,25 @@ static void __fastcall SaveGame(void* b, void*) { if (state == Playing && !host)
 static bool reopenScreen;
 static void(__thiscall* oStartGame)(void*, bool, bool);
 static void(__thiscall* oStartBoard)(void*);
+// a start refused in the lobby: every caller (main menu, tank screen, hatch screen...) has already removed its own
+// screen, so with no board the main menu comes back (otherwise nothing is left to draw and the game looks frozen)
+static bool RefuseInLobby(void* a)
+{
+    if (state != Lobby || inLockstep) return false;
+    api->toast("You're in a co-op lobby: leave it (F7) to play on your own");
+    reopenScreen = true;
+    if (!api->board() && !at<void*>(a, App_mGameSelector))
+        reinterpret_cast<void(__thiscall*)(void*)>(App_ShowGameSelector)(a);
+    return true;
+}
 static void __fastcall StartBoard(void* a, void*)   // the modes that start their own board (Play as the Alien)
 {
-    if (state == Lobby && !inLockstep)
-    {
-        api->toast("You're in a co-op lobby: leave it (F7) to play on your own");
-        reopenScreen = true;
-        return;
-    }
+    if (RefuseInLobby(a)) return;
     oStartBoard(a);
 }
 static void __fastcall StartGame(void* a, void*, bool checkContinue, bool showHelp)
 {
-    if (state == Lobby && !inLockstep)
-    {
-        api->toast("You're in a co-op lobby: leave it (F7) to play on your own");
-        reopenScreen = true;
-        return;
-    }
+    if (RefuseInLobby(a)) return;
     oStartGame(a, checkContinue, showHelp);
 }
 
@@ -1585,6 +1586,12 @@ static RECT WalletBtn() { return { CX, DY + 258, CX + 150, DY + 287 }; }
 static RECT ScaleBtn() { return { CX, DY + 298, CX + 150, DY + 327 }; }
 static RECT ModeBtn() { return { CX + 160, DY + 298, CX + 330, DY + 327 }; }
 static RECT TankBtn() { return { CX + 336, DY + 298, CX + 410, DY + 327 }; }
+static int JoinedPlayers()   // you and every guest who has said who they are
+{
+    int players = 1;
+    for (int i = 1; i < MaxPlayers; i++) if (peers[i].used && !names[i].empty()) players++;
+    return players;
+}
 static RECT StartBtn() { return { CX + CW - 84, DY + 298, CX + CW, DY + 327 }; }
 static RECT ServerBtn() { return { CX + CW - 160, DY + 166, CX + CW, DY + 192 }; }   // Online tab: the server settings
 static RECT SrvHostBox() { return { CX + 80, DY + 196, CX + CW, DY + 228 }; }
@@ -1750,9 +1757,7 @@ static int Mouse(int x, int y, int button, int down)
         else if (host && pickMode != 0 && ui::In(TankBtn(), x, y)) pickTank = pickTank % 4 + 1;
         else if (host && ui::In(StartBtn(), x, y))
         {
-            int players = 1;
-            for (int i = 1; i < MaxPlayers; i++) if (peers[i].used && !names[i].empty()) players++;
-            if (players < 2) status = "Nobody has joined yet";
+            if (JoinedPlayers() < 2) api->toast("Nobody has joined yet: share the room code");
             else { screen = false; HostStart(pickMode, pickTank); }
         }
     }
@@ -1999,7 +2004,9 @@ static void Overlay(void* g)
             if (ui::Hover(api, ScaleBtn())) ui::Tooltip("Tougher tanks for more players: prices +25% and aliens +50% for each player after the first.");
             ui::Button(api, g, ModeBtn(), ModeName(pickMode), Look::Center);
             if (pickMode != 0) ui::Button(api, g, TankBtn(), ("Tank " + std::to_string(pickTank)).c_str(), Look::Center);
-            ui::Button(api, g, StartBtn(), "Start", Look::Main);
+            bool ready = JoinedPlayers() >= 2;
+            ui::Button(api, g, StartBtn(), "Start", Look::Main, ready);
+            if (!ready && ui::Hover(api, StartBtn())) ui::Tooltip("Waiting for players: share the room code. To play on your own, leave the lobby.");
         }
         else ui::FitText(api, g, f10, "The host picks the game and starts it.", CX, DY + 314, CW, ui::Cream);
     }

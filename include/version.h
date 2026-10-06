@@ -2,12 +2,18 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.2.0"
+#define REMOD_VERSION "0.2.1"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.2.1", {
+        "Co-op: starting a game of your own while in",
+        "  a lobby no longer freezes the game: the menu",
+        "  and the lobby come back.",
+        "Co-op: Start is greyed out until someone joins.",
+        nullptr } },
     { "0.2.0", {
         "Keys tab: change every key, reset to defaults.",
         "  Space's pause dialog can move to another key.",
