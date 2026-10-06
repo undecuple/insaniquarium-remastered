@@ -12,7 +12,7 @@ static const struct { const char* version; const char* lines[16]; } RemodChangel
         "First release.",
         "Remastered page on the main menu; settings: F2.",
         "Loaded mods screen with a restart button.",
-        "Native-resolution window (Display tab).",
+        "Large sharp window or borderless (Display tab).",
         "Co-op, 2-4 players: online with no setup,",
         "  Steam or address. Avatars, versus (a player",
         "  steers the aliens), split money, joining.",

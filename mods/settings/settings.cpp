@@ -47,8 +47,8 @@ static std::string Get(const Setting& it)
 static void Build()
 {
     tabs[0] = {
-        { "Native-resolution window", "display", "window", "A borderless window filling the screen, the game scaled up with black bars. Switches the game to windowed mode.",
-          { { "Off", "normal" }, { "On", "native" } }, "native", true },
+        { "Window", "display", "window", "Large: a window as big as the screen allows (whole multiples of 640x480), resizable. Borderless: fills the screen, black bars at the sides. Game's own: 640x480, or its fullscreen mode.",
+          { { "Game's own", "normal" }, { "Large", "native" }, { "Borderless", "borderless" } }, "native", true },
         { "Scaling", "display", "scale", "Fit: as large as the screen allows. Whole multiples: 2x, 3x... only (sharpest pixels, wider bars).",
           { { "Fit", "fit" }, { "Whole multiples", "integer" } }, "fit", true },
         { "Frame counter", "fps", "shown", "Frames per second in the top-left corner (F3 shows or hides it).", {}, "0", false },

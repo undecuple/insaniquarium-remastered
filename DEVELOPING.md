@@ -185,7 +185,7 @@ names the cause.
 include/remod.h    the mod API (C)
 include/game.h         addresses and offsets in the original exe
 core/core.cpp          the loader/core (ddraw proxy, exe check, hooks, mod loading, API)
-core/display.cpp       the native-resolution window ([display]: DirectDraw primary-surface Blt wrapper, mouse mapping)
+core/display.cpp       the large window ([display]: DirectDraw primary-surface Blt wrapper, mouse mapping, scaled cursors)
 loader/ddraw.exports   the DirectDraw exports the proxy forwards
 mods/<name>/           one folder per mod
 tests/<name>/          test-only mods (crashtest; testkit: F9 starve every fish, F10 +5000 shells and level 1-2, F11
