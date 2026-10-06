@@ -1,0 +1,39 @@
+# Publishes a release when a version tag is pushed (git tag v0.1.0 && git push origin v0.1.0): builds the zip from that
+# commit, checks that the tag matches REMOD_VERSION in include/version.h, and attaches the zip and its SHA-256 to a new
+# GitHub release whose text is that version's changelog. Builds are reproducible: the same commit with the same tools
+# gives the same zip, so anyone can rebuild it (tools/ci-setup.sh, then the steps below) and compare the checksum.
+name: release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # to create the release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: node:24-bookworm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the build tools
+        run: tools/ci-setup.sh
+      - name: Check the version
+        run: |
+          v=$(sed -n 's/^#define REMOD_VERSION "\(.*\)"/\1/p' include/version.h)
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME doesn't match REMOD_VERSION $v"; exit 1; }
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+      - name: Build and package
+        run: |
+          git config --global --add safe.directory "$PWD"
+          SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) tools/package.sh
+          tools/release-notes.sh "$VERSION"
+          cat build/release/SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Insaniquarium - Remastered Mod ${{ env.VERSION }}
+          body_path: build/release/NOTES.md
+          files: |
+            build/release/Insaniquarium-Remastered-Mod-${{ env.VERSION }}.zip
+            build/release/SHA256SUMS.txt

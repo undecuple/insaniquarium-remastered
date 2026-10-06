@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Dependency updates for Insaniquarium - Remastered Mod: GitHub Actions, the CI image, the co-op server images and the versions pinned in tools/fetch-deps.sh. Setup: DEVELOPING.md",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommitsDisabled"
+  ],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "commitMessagePrefix": "Deps:",
+  "packageRules": [
+    {
+      "description": "GitHub Actions: one pull request for all of them",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "The CI image (node:24-bookworm) fixes the compiler, so releases stay reproducible: changing it is a deliberate change, by hand",
+      "matchPackageNames": ["node"],
+      "enabled": false
+    },
+    {
+      "description": "A new Postgres major version needs a data migration (dump and restore): never propose it automatically",
+      "matchPackageNames": ["postgres"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "Nothing merges itself: every update is built and tried in the game first",
+      "matchPackageNames": ["*"],
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versions pinned in shell scripts with a '# renovate:' comment (tools/fetch-deps.sh)",
+      "managerFilePatterns": ["/\\.sh$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( extractVersion=(?<extractVersion>\\S+))?\\s*\\n\\w+_VERSION=(?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "loose"
+    }
+  ]
+}
