@@ -86,6 +86,7 @@ static void Build()
     tabs[KeysTab] = {
         { "Settings page", "settings", "open_key", "Opens these settings, anywhere.", {}, "113", false },
         { "Co-op screen", "coop", "open_key", "Opens the co-op screen on the main menu.", {}, "118", false },
+        { "Co-op chat", "coop", "chat_key", "In a co-op game or its lobby: opens a chat line (Enter sends it, Esc drops it). Only the players in that game see it.", {}, "13", false },
         { "Achievements", "achievements", "open_key", "Opens the list of achievements.", {}, "115", false },
         { "Screensaver", "screensaver", "key", "Starts the screensaver on the main menu.", {}, "122", false },
         { "Screenshot", "screenshot", "key", "Saves a screenshot in the game folder's screenshots folder.", {}, "123", false },
@@ -130,6 +131,11 @@ static RECT RowRect(int t, int i)
     {
         int rows = ModRows(), h = ModRowH(), w = CW / ModCols(), x = CX + (i / rows) * w, y = TabY + 36 + (i % rows) * h;
         return { x, y, x + w - 6, y + h };
+    }
+    if (t == KeysTab)   // two columns of six, a little shorter (the reset button goes under them)
+    {
+        int w = CW / 2, x = CX + (i / 6) * w, y = TabY + 36 + (i % 6) * 37;
+        return { x, y, x + w - 6, y + 37 };
     }
     int cols = Columns(t), col = i / 5, row = i % 5;
     if (cols == 1) { col = 0; row = i; }
@@ -367,7 +373,7 @@ static void DrawSettings(void* g)
         if (over) help = it.help;
         std::string v = Get(it);
         int rh = r.bottom - r.top;
-        int tx = r.left + 6, labelY = tab == ModsTab ? r.top + (rh >= 40 ? 22 : rh / 2 - 1) : r.top + 28, right = r.right;
+        int tx = r.left + 6, labelY = tab == ModsTab ? r.top + (rh >= 40 ? 22 : rh / 2 - 1) : tab == KeysTab ? r.top + 25 : r.top + 28, right = r.right;
         if (tab == KeysTab)
         {
             int vk = atoi(v.c_str());
@@ -376,6 +382,7 @@ static void DrawSettings(void* g)
                 if (j != i && vk && atoi(Get(tabs[KeysTab][j]).c_str()) == vk) clash = true;
             std::string shown = capturing == (int)i ? "Press a key..." : ui::KeyName(vk);
             RECT vr = ValueRect(r, shown.c_str());
+            OffsetRect(&vr, 0, -3);   // the Keys tab's rows are shorter
             ui::Button(api, g, vr, shown.c_str(), ui::Look::Center, true, capturing == (int)i);
             if (clash && capturing != (int)i) { api->draw_text_font(g, f10, "!", vr.left - 12, vr.top + 19, 0xffff6060); if (over) help = "This key is also used by another row: pick a different one."; }
             right = vr.left - 14;
