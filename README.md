@@ -26,7 +26,7 @@ Unofficial fan project, not affiliated with PopCap Games or EA. No game files ar
 ## Where the files go
 | File (from the release zip) | Where it goes |
 |---|---|
-| `mods\` (all the mods and `remastered-mod.ini`) | the game folder: Steam → right-click *Insaniquarium! Deluxe* → **Manage → Browse local files** (usually `C:\Program Files (x86)\Steam\steamapps\common\Insaniquarium Deluxe`) |
+| `mods\` (all the mods and the default settings) | the game folder: Steam → right-click *Insaniquarium! Deluxe* → **Manage → Browse local files** (usually `C:\Program Files (x86)\Steam\steamapps\common\Insaniquarium Deluxe`) |
 | `ddraw.dll` (the loader) | the same game folder, **and** the folder the Steam version actually runs the game from: `C:\ProgramData\PopCap Games\Insaniquarium`. `install-steam.bat` (Windows) or `install-steam.sh` (Linux / Steam Deck, into the game's Proton prefix) puts it there for you |
 | your own or downloaded mods | `mods\<name>.dll` in the game folder (only `.dll` files directly in `mods\` are loaded) |
 | content packs (images, sounds, levels) | a folder inside `mods\` (see [DEVELOPING.md](DEVELOPING.md#content-packs)) |
@@ -128,7 +128,8 @@ INSTALL.txt            how to install on Windows and Linux
 README.txt             this guide;  CHANGELOG.txt  what's new;  LICENSES.txt  licences
 mods/
   settings.dll  achievements.dll  coop.dll  extramodes.dll  sandbox.dll  alienplay.dll  content.dll  hovercoins.dll  timecontrol.dll  autosave.dll  continues.dll  accessibility.dll  mutators.dll  fps.dll  screenshot.dll  screensaver.dll
-  remastered-mod.ini   settings (each mod has a section; delete a mod's .dll to remove it)
+  remastered-mod.default.ini   the default settings: the game makes your remastered-mod.ini from them
+  remod-files.txt      the mod's own files (updates remove what a version dropped; uninstalling removes only these)
 ```
 (Building it yourself: `./build.sh` puts these files in `build/dist/`; `tools/package.sh` makes the zip.)
 
@@ -141,7 +142,8 @@ Full step-by-step guide: **[docs/INSTALL.md](docs/INSTALL.md)** (`INSTALL.txt` i
 The title screen then says "Insaniquarium - Remastered Mod is on".
 
 ## Settings
-Easiest: the settings page (**F2**). Everything is stored in `mods/remastered-mod.ini`, which you can also edit with
+Easiest: the settings page (**F2**). Everything is stored in `mods/remastered-mod.ini` (made by the game at its first
+start from `remastered-mod.default.ini`; updates add new settings to it and keep yours), which you can also edit with
 any text editor (comments go on their own lines, starting with `;`). A mod can be switched off there too:
 `[mods]` `name=0` (e.g. `mutators=0`).
 ```ini

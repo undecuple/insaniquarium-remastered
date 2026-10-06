@@ -38,6 +38,15 @@ fi
 LOADER_DIR="$PFX/drive_c/ProgramData/PopCap Games/Insaniquarium"
 echo "game folder: $GAME"
 echo "loader folder: $LOADER_DIR"
+# files in use: replacing them under a running game can crash it
+if pgrep -f 'popcapgame1\.ex[e]' >/dev/null 2>&1; then echo "Insaniquarium is running: close it first, then run this again." >&2; exit 1; fi
+# the mod's own files (paths relative to mods/): what this installed last time, else this release's list
+remod_files() {
+  local list
+  for list in "$GAME/mods/remod-files.installed" "$GAME/mods/remod-files.txt" "$SRC/mods/remod-files.txt"; do
+    [ -f "$list" ] && { tr -d '\r' < "$list" | grep -v '^version ' | tr '\\' /; return; }
+  done
+}
 
 if [ $UNINSTALL = 1 ]; then
   rm -f "$LOADER_DIR/ddraw.dll" "$GAME/ddraw.dll"
@@ -47,7 +56,10 @@ p = sys.argv[1]; s = open(p).read()
 s = re.sub(r'\n\[Software\\\\Wine\\\\AppDefaults\\\\popcapgame1\.exe\\\\DllOverrides\][^\n]*\n"ddraw"="native,builtin"\n', '\n', s)
 open(p, 'w').write(s)
 PY
-  rm -f "$GAME/mods/"*.dll
+  # only the mod's own files: other mods in mods/ stay
+  remod_files | while IFS= read -r f; do case "$f" in ''|*..*|/*) ;; *) rm -f "$GAME/mods/$f" ;; esac; done
+  rmdir "$GAME/mods/coop" 2>/dev/null || true
+  rm -f "$GAME/mods/remod-files.txt" "$GAME/mods/remod-files.installed"
   echo "removed Insaniquarium - Remastered Mod (kept $GAME/mods/remastered-mod.ini and the log; delete $GAME/mods to remove them too)"
   exit 0
 fi
@@ -65,9 +77,9 @@ if ! grep -qF "$REGKEY" "$PFX/user.reg" 2>/dev/null; then
 fi
 mkdir -p "$LOADER_DIR" "$GAME/mods"
 cp $SRC/ddraw.dll "$LOADER_DIR/"
-cp $SRC/mods/*.dll "$GAME/mods/"
+cp $SRC/mods/*.dll $SRC/mods/remastered-mod.default.ini $SRC/mods/remod-files.txt "$GAME/mods/"
 [ ! -d $SRC/mods/coop ] || cp -r $SRC/mods/coop "$GAME/mods/"   # steam_api.dll for co-op over Steam
-# the default settings on the first install (later installs keep the player's)
-[ -f "$GAME/mods/remastered-mod.ini" ] || cp $SRC/mods/remastered-mod.ini "$GAME/mods/"
+# the player's remastered-mod.ini is never replaced: the game makes it from the defaults at its first start and adds
+# the settings of newer versions to it; files an older version had and this one doesn't are removed then too
 echo "installed. Start the game from Steam as usual (if the mods don't show, set its Launch Options to"
 echo '  WINEDLLOVERRIDES="ddraw=n,b" %command%  )'

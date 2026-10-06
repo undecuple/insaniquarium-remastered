@@ -15,6 +15,7 @@
 #include <map>
 #include "MinHook.h"
 #include "remod.h"
+#include "version.h"
 #include "game.h"
 #include "display.h"
 
@@ -28,6 +29,7 @@ namespace {
 std::string gGameDir, gModsDir;
 FILE* gLog;
 bool gActive;   // the exe matched: hooks and mods are on
+std::string gVersionWarning;   // the loader and the mods are different versions (CheckInstalledFiles): the start-up message says so
 bool gScreenSaver;   // this copy of the game runs as the screensaver (-screensaver, started by the screensaver mod): no mods, windowed
 
 // every callback remembers the mod that registered it, so a mod that crashes can be switched off
@@ -675,9 +677,9 @@ void LoadMods()
     FindClose(it);
     Log("%d mod(s) loaded", n);
     // shown on the title screen, so players can see the mod is installed
-    char t[96];
+    char t[160];
     snprintf(t, sizeof t, "Insaniquarium - Remastered Mod is on (%d mod%s)", n, n == 1 ? "" : "s");
-    Toast(t);
+    Toast(gVersionWarning.empty() ? t : gVersionWarning.c_str());
     gToastUntilInput = true;   // past the loading screen: until the player first clicks
     gToastTop = true;
 }
@@ -733,12 +735,195 @@ void BackupSaves()
     Log(CopyTree(saves, backup) ? "saves backed up to %s" : "couldn't back up the saves to %s", backup.c_str());
 }
 
+// ---- updates -------------------------------------------------------------------------------------------------------------
+// A release ships its settings as mods\remastered-mod.default.ini (so copying a new version over an old one never
+// replaces the player's own remastered-mod.ini) and the list of its own files as mods\remod-files.txt ("version X" and
+// one path per line, relative to mods\).
+
+struct IniEntry { std::string key, text; };   // a setting of the default file: its key and its lines (comments + key=value)
+struct IniSection { std::string name, header; std::vector<IniEntry> entries; };   // header: the comments above it + "[name]"
+
+std::string Lower(std::string s) { for (auto& c : s) c = (char)tolower((unsigned char)c); return s; }
+bool ReadText(const std::string& path, std::string& out)
+{
+    FILE* f = fopen(path.c_str(), "rb");
+    if (!f) return false;
+    char buf[4096];
+    out.clear();
+    for (size_t n; (n = fread(buf, 1, sizeof buf, f)) > 0;) out.append(buf, n);
+    fclose(f);
+    return true;
+}
+std::vector<std::string> Lines(const std::string& text)
+{
+    std::vector<std::string> v;
+    size_t pos = 0;
+    while (pos < text.size())
+    {
+        size_t e = text.find('\n', pos);
+        std::string l = text.substr(pos, e == std::string::npos ? std::string::npos : e - pos);
+        if (!l.empty() && l.back() == '\r') l.pop_back();
+        v.push_back(l);
+        pos = e == std::string::npos ? text.size() : e + 1;
+    }
+    return v;
+}
+std::string KeyOf(const std::string& line)   // "key" of a "key=value" line (lower case), "" for anything else
+{
+    std::string t = TrimmedValue(line);
+    if (t.empty() || t[0] == ';' || t[0] == '#' || t[0] == '[') return "";
+    size_t eq = t.find('=');
+    return eq == std::string::npos ? "" : Lower(TrimmedValue(t.substr(0, eq)));
+}
+
+// defaults a version changed: a setting still at the old default (never changed by the player) moves to the new one when
+// the file is updated from an older version ([core] settings_version, written by UpdateSettings; missing = 0.1.0)
+struct DefaultChange { const char *version, *section, *key, *from, *to; };
+const DefaultChange kDefaultChanges[] = {
+    { "0.2.0", "display", "window", "native", "normal" },   // the game's own 640x480 window by default
+    { "0.2.0", "screensaver", "quit", "1", "0" },           // the game waits minimised (under Steam, closing it ended the screensaver)
+};
+bool VersionLess(const std::string& a, const std::string& b)
+{
+    int x[3] = {}, y[3] = {};
+    sscanf(a.c_str(), "%d.%d.%d", &x[0], &x[1], &x[2]);
+    sscanf(b.c_str(), "%d.%d.%d", &y[0], &y[1], &y[2]);
+    for (int i = 0; i < 3; i++) if (x[i] != y[i]) return x[i] < y[i];
+    return false;
+}
+
+// the player's settings: made from the defaults the first time; later, settings a new version added are appended to
+// their sections (with their comments), defaults a version changed are moved on where the player kept the old one, and
+// nothing the player chose is changed
+void UpdateSettings()
+{
+    std::string defPath = gModsDir + "\\remastered-mod.default.ini", defText, userText;
+    if (!ReadText(defPath, defText)) return;
+    if (!ReadText(IniPath(), userText))
+    {
+        Log(CopyFileA(defPath.c_str(), IniPath().c_str(), TRUE) ? "settings: made remastered-mod.ini from the defaults"
+                                                                  : "settings: couldn't make remastered-mod.ini");
+        return;
+    }
+    std::vector<IniSection> def;
+    std::string pending;   // comment lines waiting for the setting or section they describe
+    for (auto& l : Lines(defText))
+    {
+        std::string t = TrimmedValue(l);
+        if (t.empty()) { pending.clear(); continue; }
+        if (t[0] == ';' || t[0] == '#') { pending += l + "\r\n"; continue; }
+        if (t[0] == '[') { size_t c = t.find(']'); def.push_back({ Lower(t.substr(1, c == std::string::npos ? std::string::npos : c - 1)), pending + l + "\r\n", {} }); pending.clear(); continue; }
+        std::string k = KeyOf(l);
+        if (!k.empty() && !def.empty()) def.back().entries.push_back({ k, pending + l + "\r\n" });
+        pending.clear();
+    }
+    // the player's file: which keys each section has, and the line after each section's last line
+    std::vector<std::string> user = Lines(userText);
+    std::map<std::string, std::map<std::string, bool>> have;
+    std::map<std::string, size_t> sectionEnd;
+    std::string section;
+    for (size_t i = 0; i < user.size(); i++)
+    {
+        std::string t = TrimmedValue(user[i]);
+        if (!t.empty() && t[0] == '[') { size_t c = t.find(']'); section = Lower(t.substr(1, c == std::string::npos ? std::string::npos : c - 1)); }
+        else { std::string k = KeyOf(user[i]); if (!k.empty()) have[section][k] = true; }
+        if (!t.empty()) sectionEnd[section] = i + 1;
+    }
+    // the file's version, and defaults changed since then
+    std::string fileVersion = "0.1.0";
+    int versionLine = -1, moved = 0;
+    section.clear();
+    for (size_t i = 0; i < user.size(); i++)
+    {
+        std::string t = TrimmedValue(user[i]);
+        if (!t.empty() && t[0] == '[') { size_t c = t.find(']'); section = Lower(t.substr(1, c == std::string::npos ? std::string::npos : c - 1)); continue; }
+        if (section == "core" && KeyOf(user[i]) == "settings_version") { fileVersion = TrimmedValue(t.substr(t.find('=') + 1)); versionLine = (int)i; }
+    }
+    for (auto& c : kDefaultChanges)
+    {
+        if (!VersionLess(fileVersion, c.version)) continue;
+        section.clear();
+        for (size_t i = 0; i < user.size(); i++)
+        {
+            std::string t = TrimmedValue(user[i]);
+            if (!t.empty() && t[0] == '[') { size_t e = t.find(']'); section = Lower(t.substr(1, e == std::string::npos ? std::string::npos : e - 1)); continue; }
+            if (section != c.section || KeyOf(user[i]) != c.key || TrimmedValue(t.substr(t.find('=') + 1)) != c.from) continue;
+            user[i] = std::string(c.key) + "=" + c.to;
+            Log("settings: %s.%s %s -> %s (the new default; it was the old one)", c.section, c.key, c.from, c.to);
+            moved++;
+        }
+    }
+    bool stamp = fileVersion != REMOD_VERSION;
+    if (stamp && versionLine >= 0) { user[versionLine] = "settings_version=" REMOD_VERSION; stamp = false; }
+    std::map<size_t, std::string> insertAt;   // after line N of the player's file
+    std::string appended;
+    int added = 0;
+    if (stamp)   // the version line goes at the end of [core] (or a new [core] at the end)
+    {
+        std::string line = "; the version these settings were last updated for (the game keeps it up to date)\r\nsettings_version=" REMOD_VERSION "\r\n";
+        if (sectionEnd.count("core")) insertAt[sectionEnd["core"]] += line; else appended += "\r\n[core]\r\n" + line;
+    }
+    for (auto& s : def)
+    {
+        std::string missing;
+        for (auto& e : s.entries) if (!have[s.name].count(e.key)) { missing += e.text; added++; }
+        if (missing.empty()) continue;
+        if (sectionEnd.count(s.name)) insertAt[sectionEnd[s.name]] += missing;
+        else appended += "\r\n" + s.header + missing;
+    }
+    if (!added && !moved && !stamp && fileVersion == REMOD_VERSION) return;
+    std::string out;
+    for (size_t i = 0; i <= user.size(); i++)
+    {
+        if (insertAt.count(i)) out += insertAt[i];
+        if (i < user.size()) out += user[i] + "\r\n";
+    }
+    out += appended;
+    FILE* f = fopen(IniPath().c_str(), "wb");
+    if (!f) { Log("settings: couldn't add the new settings to remastered-mod.ini"); return; }
+    fwrite(out.data(), 1, out.size(), f);
+    fclose(f);
+    if (added) Log("settings: %d new setting(s) added to remastered-mod.ini (your own values are kept)", added);
+}
+
+// files an older version installed and this one doesn't have any more (a mod removed or renamed): deleted before the
+// mods load, so they don't load with the new ones; other people's mods are never touched (only listed files go). And the
+// loader (ddraw.dll, which the Steam installer puts in a second folder) should match the mods.
+void CheckInstalledFiles()
+{
+    std::string listPath = gModsDir + "\\remod-files.txt", oldPath = gModsDir + "\\remod-files.installed", text, oldText;
+    if (!ReadText(listPath, text)) return;
+    std::map<std::string, bool> now;
+    std::string version;
+    auto safe = [](const std::string& p) { return !p.empty() && p.find("..") == std::string::npos && p.find(':') == std::string::npos && p[0] != '\\' && p[0] != '/'; };
+    for (auto& l : Lines(text))
+    {
+        std::string t = TrimmedValue(l);
+        if (t.compare(0, 8, "version ") == 0) version = t.substr(8);
+        else if (safe(t)) now[Lower(t)] = true;
+    }
+    if (ReadText(oldPath, oldText))
+        for (auto& l : Lines(oldText))
+        {
+            std::string t = TrimmedValue(l);
+            if (t.compare(0, 8, "version ") == 0 || !safe(t) || now.count(Lower(t))) continue;
+            if (DeleteFileA((gModsDir + "\\" + t).c_str())) Log("update: removed mods\\%s (not part of this version any more)", t.c_str());
+        }
+    CopyFileA(listPath.c_str(), oldPath.c_str(), FALSE);
+    if (!version.empty() && version != REMOD_VERSION)
+    {
+        Log("update: the loader (ddraw.dll) is version %s but the mods are %s: install again (install-steam.bat or install-steam.sh)", REMOD_VERSION, version.c_str());
+        gVersionWarning = "The mod's loader (" REMOD_VERSION ") doesn't match its mods (" + version + "): run the installer again";
+    }
+}
+
 bool gModsLoaded;
 void EnsureModsLoaded()
 {
     if (gModsLoaded || !gActive || gScreenSaver) return;
     gModsLoaded = true;
     BackupSaves();
+    CheckInstalledFiles();
     LoadMods();
 }
 
@@ -778,6 +963,7 @@ void Start(HMODULE self)
     if (!GameMatches(exe)) { Log("not the Insaniquarium Deluxe 1.1 game these mods are for: mods stay off"); return; }
     // safe mode: Shift held while the game starts, or [core] enabled=0
     if (GetAsyncKeyState(VK_SHIFT) & 0x8000) { Log("Shift held at start: safe mode, mods stay off"); return; }
+    if (!gScreenSaver) UpdateSettings();
     if (!ConfigInt("core", "enabled", 1)) { Log("[core] enabled=0 in remastered-mod.ini: mods stay off"); return; }
     AddVectoredExceptionHandler(1, FaultHandler);
     if (MH_Initialize() != MH_OK) { Log("MinHook failed to start"); return; }

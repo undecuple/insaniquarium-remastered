@@ -80,7 +80,15 @@ if [ $TESTS = 1 ]; then
   mkdir -p $B/tests
   for d in tests/*/ examples/*/; do $CXX $LDFLAGS -o $B/tests/$(basename $d).dll $d*.cpp; echo "built $B/tests/$(basename $d).dll"; done
 fi
-cp remastered-mod.ini $O/mods/remastered-mod.ini
+# the default settings: the core makes the player's remastered-mod.ini from them (and adds new settings to it later),
+# so installing a new version over an old one never replaces the player's own file
+rm -f $O/mods/remastered-mod.ini
+cp remastered-mod.ini $O/mods/remastered-mod.default.ini
 # Valve's steam_api.dll for co-op over Steam: in mods\coop\ (a DLL directly in mods\ would be loaded as a mod)
 if [ -f third_party/steamworks/steam_api.dll ] && [ -f $O/mods/coop.dll ]; then mkdir -p $O/mods/coop && cp third_party/steamworks/steam_api.dll $O/mods/coop/; fi
+# the mod's own files (paths relative to mods\): an update removes the ones an older version had and this one doesn't,
+# the installers' uninstall removes exactly these, and the core compares the version with its own
+{ echo "version $(sed -n 's/^#define REMOD_VERSION "\(.*\)"/\1/p' include/version.h)"
+  (cd $O/mods && LC_ALL=C ls *.dll; [ ! -f coop/steam_api.dll ] || echo 'coop\steam_api.dll'; echo remastered-mod.default.ini)
+} | sed 's/$/\r/' > $O/mods/remod-files.txt
 cp install-steam.bat $O/   # Windows installer for the Steam release
