@@ -1,23 +1,28 @@
 // screensaver: watch your Virtual Tank as the game's own screensaver, started from the game. The Mods page's Open button
-// (or F11 on the main menu) saves your profile, starts WinFish_Scr.exe -screensaver from the game folder and closes the game
-// (both use the same profile, so only one runs at a time). Because the screensaver starts from inside the running game,
-// on Linux and the Steam Deck it runs in the game's own Proton prefix and finds your saves: no shortcut of its own, no
-// shared folders to set up. [screensaver] key=122 (F11; 0 = no key), quit=1 (0 = keep the game running).
+// (or F11 on the main menu) saves your profile, starts WinFish_Scr.exe -screensaver from the game folder and minimises the
+// game (which pauses itself) until the screensaver ends, then brings it back. Because the screensaver starts from inside
+// the running game, on Linux and the Steam Deck it runs in the game's own Proton prefix and finds your saves: no shortcut
+// of its own, no shared folders to set up. The game keeps running on purpose: under Steam, once the game closes Steam ends
+// everything it started, the screensaver included. [screensaver] key=122 (F11; 0 = no key), quit=0 (1 = close the game).
 #include "remod.h"
 #include "game.h"
 #include "remodui.h"
 #include <windows.h>
 #include <string>
+#include <thread>
+#include <atomic>
 
 using namespace game;
 static const RemodApi* api;
 static int key = VK_F11;
-static bool quitGame = true;
+static bool quitGame = false;
+static std::atomic<int> ended{ -1 };   // the screensaver's run time in ms when it ended (-1: not yet), for the main thread
+static std::atomic<unsigned> endCode;
 
 static void Load()
 {
     key = api->config_int("screensaver", "key", VK_F11);
-    quitGame = api->config_int("screensaver", "quit", 1) != 0;
+    quitGame = api->config_int("screensaver", "quit", 0) != 0;
 }
 
 // the game folder: this DLL is <game>\mods\screensaver.dll
@@ -47,10 +52,39 @@ static void Start()
         api->log("screensaver: CreateProcess failed (%lu)", GetLastError());
         return;
     }
-    CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
     api->log("screensaver: started %s", exe.c_str());
+    HWND wnd = nullptr;
+    if (void* a = api->app()) wnd = at<HWND>(a, 0x350);
     if (quitGame)
-        if (void* a = api->app()) PostMessageA(at<HWND>(a, 0x350), WM_CLOSE, 0, 0);   // the game saves and closes as usual
+    {
+        CloseHandle(pi.hProcess);
+        if (wnd) PostMessageA(wnd, WM_CLOSE, 0, 0);   // the game saves and closes as usual
+        return;
+    }
+    if (wnd) ShowWindowAsync(wnd, SW_MINIMIZE);   // out of the way (and paused) while the screensaver shows
+    HANDLE proc = pi.hProcess;
+    DWORD started = GetTickCount();
+    std::thread([proc, wnd, started] {
+        WaitForSingleObject(proc, INFINITE);
+        DWORD code = 0;
+        GetExitCodeProcess(proc, &code);
+        CloseHandle(proc);
+        endCode = code;
+        ended = (int)(GetTickCount() - started);
+        if (wnd) { ShowWindowAsync(wnd, SW_RESTORE); SetForegroundWindow(wnd); }
+    }).detach();
+}
+
+// back in the game: what happened to the screensaver (from the main thread)
+static void Overlay(void*)
+{
+    int ms = ended.exchange(-1);
+    if (ms < 0) return;
+    unsigned code = endCode;
+    api->log("screensaver: ended after %d s (exit code 0x%x)", ms / 1000, code);
+    if (code >= 0xc0000000u) api->toast("The screensaver crashed (see mods\\remastered-mod.log)");
+    else if (ms < 3000) api->toast("The screensaver closed straight away");
 }
 
 static int Key(int vk, int down)
@@ -70,5 +104,6 @@ extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
     Load();
     api->on_config(Load);
     api->on_key(Key);
+    api->on_overlay(Overlay);
     return 1;
 }
