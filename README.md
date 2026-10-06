@@ -88,11 +88,12 @@ red **!**.
 | **Space** | the game's own pause dialog (moved to another key there, Space stops opening it) | in a tank |
 
 Built into Insaniquarium - Remastered Mod itself:
-- **Window choices** (Display tab of the settings): the game opens in its own **640x480** window by default (also the
-  Steam release, which would otherwise start fullscreen). **Large** opens a window as large as your screen allows (2x on
-  a 1080p screen, 3x on 1440p...), resizable and maximisable, scaled up sharply with the game's own cursor at the same
-  size. **Borderless** fills the whole screen, with black bars at the sides. **Fullscreen** is the game's own fullscreen
-  mode.
+- **Window choices** (Display tab of the settings): the game opens in a **Large** window by default (also the Steam
+  release, which would otherwise start fullscreen): as large as your screen allows (2x on a 1080p screen, 3x on
+  1440p...), resizable and maximisable, scaled up sharply with the game's own cursor at the same size. **640x480** is
+  the game's own small window. **Borderless** fills the whole screen, with black bars at the sides. **Fullscreen** is
+  the game's own fullscreen mode, which changes your screen's resolution (Borderless is usually better). The game's own
+  **Fullscreen** box in Options (and Alt+Enter) switches to Borderless and back to your window.
 - **Safe start:** hold **Shift** while the game starts to play without mods this time.
 - **Crash protection:** if a mod goes wrong, it's switched off with a message ("... crashed and was switched off") and
   the game keeps going.
@@ -155,7 +156,7 @@ enabled=1          ; 0 = Insaniquarium - Remastered Mod off (same as holding Shi
 open_key=113       ; F2
 
 [display]
-window=normal      ; the game's 640x480 window; native = large window; borderless = fills the screen; fullscreen
+window=native      ; a large window; normal = the game's 640x480 window; borderless = fills the screen; fullscreen
 scale=fit          ; integer = only whole multiples (2x, 3x...): sharpest pixels, wider black bars
 
 [autosave]
@@ -225,7 +226,7 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
 | Log says "safe mode" | Shift was held while the game started, or `[core] enabled=0`. |
 | A message says a mod "crashed and was switched off" | That mod is off until the next start; the log names it and where it failed. Please report it. |
 | The game doesn't start at all | Remove the loader (Windows: `install-steam.bat uninstall`; Linux: `install-steam.sh --uninstall`) and tell us what the log said (open an issue). |
-| The window isn't the size you chose | The game is a 640x480 window by default: pick **Large**, **Borderless** or **Fullscreen** in the Display tab (or `[display] window=native`, `borderless`, `fullscreen`), then restart the game. The log says "native window: ..." for Large and Borderless, and "display: switching the game to ..." when the game came up in the other screen mode. |
+| The window isn't the size you chose | The game is a large window by default: pick **640x480**, **Borderless** or **Fullscreen** in the Display tab (or `[display] window=normal`, `borderless`, `fullscreen`), then restart the game. The log says "native window: ..." for Large and Borderless, and "display: switching the game to ..." when the game came up in the other screen mode. |
 | Speed keys do nothing | They only work inside a tank, and the game window must have focus. In co-op only the host changes the speed (for everyone); a guest gets "Only the host controls the speed in co-op". Check the keys in `remastered-mod.ini`. |
 | Co-op says "too many lobbies for this account" | Only with older versions of the mod: update. The game now clears its own old listings by itself. |
 | The screensaver closes straight away | Moving the mouse or pressing a key ends it, as any screensaver; keep still for a second after starting it. The log says how it ended (`screensaver: ended after ...`). |
@@ -257,7 +258,9 @@ Open an issue with what happened, your system (Windows / Linux / Steam Deck) and
 every player's).
 
 Credits: Insaniquarium - Remastered Mod uses [MinHook](https://github.com/TsudaKageyu/minhook) (BSD-2-Clause) by Tsuda Kageyu;
-co-op over Steam uses Valve's Steamworks API. Insaniquarium - Remastered Mod is MIT-licensed (LICENSE.txt); all
+co-op over Steam uses Valve's Steamworks API. Some of the game's names and layouts were identified with help from
+[WinFish](https://github.com/Vindirect/WinFish), a readable decompile of the game by Vindirect. Insaniquarium -
+Remastered Mod is MIT-licensed (LICENSE.txt); all
 licences: LICENSES.txt in the download.
 *Insaniquarium* and its art belong to PopCap Games.
 

@@ -2,12 +2,21 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.2.1"
+#define REMOD_VERSION "0.2.2"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.2.2", {
+        "Window: a large window by default again",
+        "  (640x480 is still in the Display tab).",
+        "The game's own Fullscreen box and Alt+Enter",
+        "  switch to Borderless and back, no more",
+        "  screen-mode change.",
+        "Remastered page: Meryl no longer reads out",
+        "  the main menu's buttons hidden under it.",
+        nullptr } },
     { "0.2.1", {
         "Co-op: starting a game of your own while in",
         "  a lobby no longer freezes the game: the menu",

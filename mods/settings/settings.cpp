@@ -49,8 +49,8 @@ static std::string Get(const Setting& it)
 static void Build()
 {
     tabs[0] = {
-        { "Window", "display", "window", "640x480: the game's own window. Large: as big as the screen allows (whole multiples of 640x480), resizable. Borderless: fills the screen, black bars at the sides. Fullscreen: the game's own fullscreen mode.",
-          { { "640x480", "normal" }, { "Large", "native" }, { "Borderless", "borderless" }, { "Fullscreen", "fullscreen" } }, "normal", true },
+        { "Window", "display", "window", "Large: as big as the screen allows (whole multiples of 640x480), resizable. 640x480: the game's own window. Borderless: fills the screen, black bars at the sides. Fullscreen: the game's own fullscreen mode (changes the screen's resolution; Borderless is usually better).",
+          { { "Large", "native" }, { "640x480", "normal" }, { "Borderless", "borderless" }, { "Fullscreen", "fullscreen" } }, "native", true },
         { "Scaling", "display", "scale", "Fit: as large as the screen allows. Whole multiples: 2x, 3x... only (sharpest pixels, wider bars).",
           { { "Fit", "fit" }, { "Whole multiples", "integer" } }, "fit", true },
         { "Frame counter", "fps", "shown", "Frames per second in the top-left corner (F3 shows or hides it).", {}, "0", false },
@@ -356,8 +356,9 @@ static void DrawSettings(void* g)
         const std::string Lines[] = {
             keys,
             "Hold Shift while the game starts to play without mods this time.",
-            "Everything the mod does is written to mods\\remastered-mod.log in the game folder.",
+            "Everything the mod does is written to remastered-mod.log in the game's mods folder.",   // (the font has no backslash)
             "MIT licence. Uses MinHook (BSD-2-Clause). Insaniquarium and its art belong to PopCap Games.",
+            "Thanks to WinFish by Vindirect (github.com/Vindirect/WinFish), a decompile of the game that helped identify its code.",
         };
         for (auto& l : Lines) y = ui::WrapText(api, g, f10, l, CX, y + 4, CW, ui::Cream, 2) + 2;
         return;
@@ -437,7 +438,14 @@ static void Overlay(void* g)
     }
     else if (ui::OnMainMenu(api))
     {
-        if (page) DrawPage(g);
+        if (page)
+        {
+            DrawPage(g);
+            // the page covers the menu's big buttons, but the pointer still moves over them: no tips from Meryl
+            void* sel = at<void*>(App(), App_mGameSelector);
+            for (int off : { Selector_mAdventureButton, Selector_mVirtualTankButton, Selector_mChallengeButton, Selector_mTimeTrialButton })
+                if (void* b = at<void*>(sel, off)) at<bool>(b, Widget_mIsOver) = false;
+        }
         else ui::Button(api, g, EntryRect, "Remastered", ui::Look::Main);
     }
     else if (page && !api->board() && !at<void*>(App(), App_mGameSelector)) page = false;

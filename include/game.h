@@ -140,6 +140,12 @@ constexpr uintptr_t Graphics_dtor = 0x004556f0;            // void (Graphics*)
 constexpr int App_mFrameTime = 0x454;   // int: ms per update tick (28; the framework's default is 10)
 constexpr int App_mBoard     = 0x730;   // Board*
 constexpr uintptr_t App_ReadFromRegistry = 0x00551d70;   // WinFishApp::ReadFromRegistry (thiscall): App_mIsWindowed from the registry's ScreenMode, cleared in screensaver mode
+constexpr uintptr_t App_SwitchScreenMode = 0x00485ec0;   // SexyAppBase::SwitchScreenMode(bool windowed, bool is3d, bool force)
+                                                           //   (vtable 0x110): every switch ends here (the Options' Fullscreen
+                                                           //   box through ApplyOptionsSettings, Alt+Enter, App_vSwitchScreenMode);
+                                                           //   it destroys the window and makes a new one (MakeWindow)
+constexpr uintptr_t App_DoOptionsDialog = 0x0054c620;    // void (WinFishApp*, bool fromMenu): the Options dialog, whose
+                                                           //   Fullscreen box starts as !App_mIsWindowed (ctor @005349d0)
 constexpr int App_mCursorImages = 0x3b4;  // Image*[]: the custom cursors by number (0 pointer, 1 hand, 2 dragging, 3 text); NULL = Windows' own (EnforceCursor @00486010)
 constexpr int App_mCursorNum = 0x4b0;     // int: the cursor the game wants now
 constexpr int App_mMouseIn = 0x4cc;       // bool: the pointer is over the game's 640x480 client area (from GetCursorPos, on a timer)
@@ -153,6 +159,7 @@ constexpr int WM_mLastDownWidget = 0x8c;  // Widget*: the pressed widget; while 
 constexpr int WM_mDownButtons = 0xe8;     // uint: buttons down as the game saw them (1 left, 2 right, 4 middle); moves become drags
 constexpr int WM_mActualDownButtons = 0xec; // uint
 constexpr int Widget_mIsDown = 0x58;      // bool
+constexpr int Widget_mIsOver = 0x59;      // bool: the pointer is on it
 constexpr int WM_mUpdateCnt = 0x28;       // int: the widget manager's update count
 constexpr int WM_mLastInputUpdateCnt = 0xf0; // int: mUpdateCnt at the last input (also set by local-only paths: the cursor leaving the window, keys)
 constexpr int App_mUpdateCount = 0x484; // int: update ticks so far
@@ -175,6 +182,9 @@ constexpr int App_vSwitchScreenMode = 0x114; // vtable: void SwitchScreenMode(bo
 constexpr int App_vShutdown = 0xa8;    // vtable: void Shutdown() (the Quit button)
 constexpr int App_vGetDialog = 0x124;   // vtable: Dialog* GetDialog(int id)
 constexpr int App_mGameSelector = 0x738; // GameSelector*: the main menu while it's shown
+// GameSelector: the four big buttons; while one's mIsOver is set, Update (@0051ebe0) shows its tip in Meryl's bubble
+constexpr int Selector_mAdventureButton = 0x90, Selector_mVirtualTankButton = 0x94, Selector_mChallengeButton = 0xa0,
+              Selector_mTimeTrialButton = 0xa4;   // ButtonWidget*
 constexpr int Widget_vResize = 0xa0;    // vtable: void Resize(int x, int y, int w, int h)
 constexpr int Image_mWidth = 0x24, Image_mHeight = 0x28;
 constexpr int Profile_mShells = 0x48;   // int

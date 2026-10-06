@@ -18,7 +18,9 @@ the system's real `ddraw.dll`. On load the core checks the exe and hooks a few g
 first `DirectDrawCreate` (main thread, before resources load) loads every `mods/*.dll` and calls its
 `RemodInit`. Mods get a small C API (`include/remod.h`): hooks, callbacks (game update, tank draw, overlay on
 every screen, keys), drawing with the game's own fonts, toasts, settings, a log. Game addresses and field offsets come
-from reverse-engineering the exe (`include/game.h`).
+from reverse-engineering the exe (`include/game.h`), with help from [WinFish](https://github.com/Vindirect/WinFish)
+(Vindirect's readable C++ decompile of the game: class layouts and function names; where it and the exe disagree, the
+exe's disassembly wins).
 
 A `winmm.dll` proxy (the game imports winmm directly, so it loads even earlier) was tried first and dropped: under Wine
 the real winmm loads msacm32, which calls winmm, i.e. the half-loaded proxy, and the game crashes in its BASS setup.

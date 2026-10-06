@@ -84,8 +84,10 @@ and start it again.
 - **Your saves** are copied once to `userdata-before-remastered-mod` (next to the game's `userdata`; for the Steam
   release that's `C:\ProgramData\Steam\Insaniquarium`) before the mod changes anything.
 - **Keys:** **F2** → Keys: click a key to change it; right-click or **Reset all keys** for the defaults.
-- **The window:** the game opens in its own 640x480 window. For a bigger one: **F2** → Display → Window: **Large** (as
-  big as your screen allows, sharp, resizable), **Borderless** (fills the screen) or **Fullscreen**; restart the game.
+- **The window:** the game opens in a large window (as big as your screen allows, sharp, resizable). To change it:
+  **F2** → Display → Window: **640x480** (the game's own small window), **Borderless** (fills the screen) or
+  **Fullscreen**; restart the game. The game's own Fullscreen box in Options (or Alt+Enter) switches to Borderless and
+  back right away.
 - **Screensaver:** **F11** on the main menu (or **Open** on the Mods page) shows your Virtual Tank full-screen; move
   the mouse to come back.
 - **Playing without mods for once:** hold **Shift** while the game starts.

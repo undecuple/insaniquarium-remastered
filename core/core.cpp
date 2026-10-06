@@ -520,6 +520,9 @@ void MarkAllDirty(void* wm)
 }
 
 // every update tick, before the game's own: the native window's switch from fullscreen (between frames, not while drawing)
+bool gOwnSwitch;   // the core's own start-up switch (DisplayNeedsSwitch): not the player's
+bool gAltEnter;    // Alt+Enter was just pressed (WndProc): the game's next switch toggles
+void EnsureWindowHooked();
 using UpdateFramesFn = void(__thiscall*)(void*);
 UpdateFramesFn oUpdateFrames;
 void __fastcall UpdateFrames(void* app, void*)
@@ -528,9 +531,47 @@ void __fastcall UpdateFrames(void* app, void*)
     if (sw >= 0)
     {
         Log("display: switching the game to %s", sw ? "windowed" : "fullscreen");
+        gOwnSwitch = true;
         reinterpret_cast<void(__thiscall*)(void*, bool)>((*reinterpret_cast<void***>(app))[App_vSwitchScreenMode / 4])(app, sw == 1);
+        gOwnSwitch = false;
     }
     oUpdateFrames(app);
+}
+
+// the game's own Fullscreen switch (the Options' box, Alt+Enter): on, a borderless window covering the screen instead of
+// the game's screen-mode change (which misbehaves on many desktops and under Wine/Proton); off, the window mode in use
+// before ([display] last_window). The choice is saved in [display] window, as the settings page would.
+using SwitchScreenModeFn = void(__thiscall*)(void*, bool, bool, bool);
+SwitchScreenModeFn oSwitchScreenMode;
+void __fastcall SwitchScreenMode(void* app, void*, bool wantWindowed, bool is3d, bool force)
+{
+    std::string mode = DisplayMode();
+    if (gOwnSwitch) { oSwitchScreenMode(app, wantWindowed, is3d, force); EnsureWindowHooked(); return; }
+    bool full = mode == "borderless" || mode == "fullscreen";
+    bool altEnter = gAltEnter;
+    gAltEnter = false;
+    bool wantFull = altEnter ? !full : !wantWindowed;
+    if (wantFull == full) { oSwitchScreenMode(app, mode != "fullscreen", is3d, false); EnsureWindowHooked(); return; }   // only the 3D box changed
+    char last[32];
+    ConfigString("display", "last_window", "native", last, sizeof last);
+    std::string next = wantFull ? "borderless" : (strcmp(last, "normal") == 0 ? "normal" : "native");
+    if (wantFull) ConfigSet("display", "last_window", mode.c_str());
+    ConfigSet("display", "window", next.c_str());
+    Log("display: the game's Fullscreen switch: %s -> %s", mode.c_str(), next.c_str());
+    DisplaySetMode(next);
+    oSwitchScreenMode(app, true, is3d, true);   // a new window, which the display wrapper sizes at its first frame
+    EnsureWindowHooked();
+}
+
+// the Options dialog: its Fullscreen box shows the borderless window as fullscreen (the game itself stays windowed)
+using DoOptionsDialogFn = void(__thiscall*)(void*, bool);
+DoOptionsDialogFn oDoOptionsDialog;
+void __fastcall DoOptionsDialog(void* app, void*, bool fromMenu)
+{
+    bool asFull = DisplayMode() == "borderless" && at<bool>(app, App_mIsWindowed);
+    if (asFull) at<bool>(app, App_mIsWindowed) = false;
+    oDoOptionsDialog(app, fromMenu);
+    if (asFull) at<bool>(app, App_mIsWindowed) = true;
 }
 
 // the screensaver copy: windowed whatever the settings say (the fullscreen mode switch fails on some Linux desktops);
@@ -599,6 +640,15 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
         gToastUntil = GetTickCount() + 1500;
     }
     if (msg == WM_ENTERSIZEMOVE) DisplayPlayerMovesWindow();
+    // Alt+Enter, which the game answers with SwitchScreenMode(!windowed): a toggle for the hook below. Held down, once a
+    // second (its "previous state" bit can't tell: the key-up went to the window the last switch destroyed)
+    static DWORD lastAltEnter;
+    if (msg == WM_SYSKEYDOWN && wp == VK_RETURN)
+    {
+        if (GetTickCount() - lastAltEnter < 1000) return 0;
+        lastAltEnter = GetTickCount();
+        gAltEnter = true;
+    }
     bool down = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN, up = msg == WM_KEYUP || msg == WM_SYSKEYUP;
     // a key a mod took is the mod's: its auto-repeats and the characters it types (Space's ' ') don't reach the game
     static WPARAM takenKey;
@@ -782,6 +832,7 @@ struct DefaultChange { const char *version, *section, *key, *from, *to; };
 const DefaultChange kDefaultChanges[] = {
     { "0.2.0", "display", "window", "native", "normal" },   // the game's own 640x480 window by default
     { "0.2.0", "screensaver", "quit", "1", "0" },           // the game waits minimised (under Steam, closing it ended the screensaver)
+    { "0.2.2", "display", "window", "normal", "native" },   // a large window by default again (640x480 was small on most screens)
 };
 bool VersionLess(const std::string& a, const std::string& b)
 {
@@ -928,13 +979,18 @@ void EnsureModsLoaded()
 }
 
 // the game window's messages, for the key callbacks, the native window's mouse mapping and the start-up toast
-// (subclassed once the window exists)
+// (subclassed once the window exists, and again whenever the game makes a new one: every screen-mode switch does)
+HWND gHookedWnd;
 void EnsureWindowHooked()
 {
-    if (gOrigWndProc || !App()) return;
+    if (!App()) return;
     HWND wnd = at<HWND>(App(), 0x350);   // SexyAppBase::mHWnd (SetTimer(this->f_350, ...))
-    if (wnd) DisplaySetWindow(wnd);
-    if (wnd) { gOrigWndProc = (WNDPROC)SetWindowLongPtrA(wnd, GWLP_WNDPROC, (LONG_PTR)WndProc); Log("window %p hooked", (void*)wnd); }
+    if (!wnd || wnd == gHookedWnd) return;
+    gHookedWnd = wnd;
+    DisplaySetWindow(wnd);
+    WNDPROC prev = (WNDPROC)SetWindowLongPtrA(wnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
+    if (prev != WndProc) gOrigWndProc = prev;
+    Log("window %p hooked", (void*)wnd);
 }
 
 void Start(HMODULE self)
@@ -973,6 +1029,9 @@ void Start(HMODULE self)
            && Hook((void*)App_UpdateFrames, (void*)&UpdateFrames, (void**)&oUpdateFrames);
     if (gActive && gScreenSaver)
         gActive = Hook((void*)App_ReadFromRegistry, (void*)&ReadFromRegistry, (void**)&oReadFromRegistry);
+    else if (gActive)
+        gActive = Hook((void*)App_SwitchScreenMode, (void*)&SwitchScreenMode, (void**)&oSwitchScreenMode)
+               && Hook((void*)App_DoOptionsDialog, (void*)&DoOptionsDialog, (void**)&oDoOptionsDialog);
     Log(gActive ? "hooks installed" : "hooks failed: mods stay off");
     if (gActive && gScreenSaver) { Log("screensaver: this copy runs the screensaver (no mods, in a window covering the screen)"); DisplayInitScreenSaver(); }
     else if (gActive) DisplayInit();

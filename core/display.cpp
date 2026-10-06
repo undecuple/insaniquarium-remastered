@@ -390,12 +390,21 @@ constexpr GUID IID_IDirectDraw_ = { 0x6C14DB80, 0xA733, 0x11CE, { 0xA5, 0x21, 0x
 
 }  // namespace
 
-// [display] window: normal (the default) = the game's own 640x480 window; native = large; borderless; fullscreen = the
-// game's own fullscreen mode. The game reads its screen mode (registry ScreenMode: 0 windowed, 1 fullscreen) at start and
+// [display] window: native (the default) = a large window; normal = the game's own 640x480 window; borderless; fullscreen =
+// the game's own fullscreen mode. The game reads its screen mode (registry ScreenMode: 0 windowed, 1 fullscreen) at start and
 // saves it when it closes, so the mode is written for every start, and switched once at the first frame if this start
 // came up the other way (the Steam release starts fullscreen unless told otherwise)
 static int gScreenMode = 0;       // what this setting wants: 0 windowed, 1 fullscreen
 static int gNeedSwitch = -1;      // once: switch to windowed (1) or fullscreen (0); -1 nothing to do
+static std::string gMode;         // the window mode in use (from the settings, or the game's own Fullscreen switch)
+
+static void ApplyMode(const std::string& mode)
+{
+    gMode = mode;
+    gBorderless = mode == "borderless";
+    gOn = mode == "native" || gBorderless;
+    gScreenMode = mode == "fullscreen" ? 1 : 0;
+}
 
 static void SetScreenModeForNextStart(DWORD* previous)
 {
@@ -410,17 +419,12 @@ static void SetScreenModeForNextStart(DWORD* previous)
 
 void DisplayInit()
 {
-    std::string mode = CoreConfigString("display", "window", "normal");
-    gBorderless = mode == "borderless";
-    gOn = mode == "native" || gBorderless;
-    gScreenMode = mode == "fullscreen" ? 1 : 0;
+    ApplyMode(CoreConfigString("display", "window", "native"));
     gInteger = CoreConfigString("display", "scale", "fit") == "integer";
-    if (gOn)
-    {
-        if (void* prev = PatchImport("user32.dll", "GetCursorPos", (void*)&GameGetCursorPos)) gRealGetCursorPos = (GetCursorPosFn)prev;
-        else CoreLog("native window: the game's GetCursorPos not found (its own cursor may show only in the top-left corner)");
-        if (void* prev = PatchImport("user32.dll", "SetCursor", (void*)&GameSetCursor)) gRealSetCursor = (SetCursorFn)prev;
-    }
+    // always (they pass everything through while the native window is off): the mode can change while the game runs
+    if (void* prev = PatchImport("user32.dll", "GetCursorPos", (void*)&GameGetCursorPos)) gRealGetCursorPos = (GetCursorPosFn)prev;
+    else CoreLog("native window: the game's GetCursorPos not found (its own cursor may show only in the top-left corner)");
+    if (void* prev = PatchImport("user32.dll", "SetCursor", (void*)&GameSetCursor)) gRealSetCursor = (SetCursorFn)prev;
     DWORD was = (DWORD)gScreenMode;
     SetScreenModeForNextStart(&was);
     if ((was != 0) != (gScreenMode != 0))
@@ -428,6 +432,16 @@ void DisplayInit()
         gNeedSwitch = gScreenMode ? 0 : 1;
         CoreLog("display: the game starts %s this time; switching it to %s", was ? "fullscreen" : "windowed", gScreenMode ? "fullscreen" : "windowed");
     }
+}
+
+// the game's own Fullscreen switch (core.cpp) changed the mode: the game makes a new window, sized at its first frame
+const std::string& DisplayMode() { return gMode; }
+void DisplaySetMode(const std::string& mode)
+{
+    ApplyMode(mode);
+    gWindowDone = false;
+    if (!gOn) TakeGameCursors(false);   // the game draws its own cursor again
+    SetScreenModeForNextStart(nullptr);
 }
 
 void DisplayInitScreenSaver()
