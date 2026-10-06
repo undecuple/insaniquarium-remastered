@@ -19,6 +19,7 @@ static const struct { const char* version; const char* lines[16]; } RemodChangel
         "  at once on Linux, the game waits and returns.",
         "Steam: saves backed up from the right folder,",
         "  achievements and records kept beside them.",
+        "Updates keep your settings and tidy old files.",
         "Co-op: no more \"too many lobbies\" errors.",
         "The start-up banner no longer covers",
         "  \"Click here to play!\".",
