@@ -2,12 +2,27 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.1.0"
+#define REMOD_VERSION "0.2.0"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.2.0", {
+        "Keys tab: change every key, reset to defaults.",
+        "  Space's pause dialog can move to another key.",
+        "Window: 640x480 by default (also on Steam),",
+        "  or large, borderless or fullscreen, with",
+        "  the game's own cursor at the right size.",
+        "Co-op chat in the lobby too; lines fade out.",
+        "Screensaver runs in a window: no more closing",
+        "  at once on Linux, the game waits and returns.",
+        "Steam: saves backed up from the right folder,",
+        "  achievements and records kept beside them.",
+        "Co-op: no more \"too many lobbies\" errors.",
+        "The start-up banner no longer covers",
+        "  \"Click here to play!\".",
+        nullptr } },
     { "0.1.0", {
         "First release.",
         "Remastered page on the main menu; settings: F2.",

@@ -146,6 +146,21 @@ The module is a Lua file in `server/modules/` (mounted at `/nakama/data/modules`
   then `docker compose pull && docker compose up -d`. The database is migrated at start.
 - **Backups:** optional. The database only holds anonymous accounts and the lobby list. Nothing is lost if it's
   reset: `docker compose down -v` wipes it, and the next start makes a fresh one.
+- **Tidying up (optional):** nothing a player keeps lives on the server (profiles, achievements and records stay on
+  their computer), so old accounts can go. With `modules/cleanup.lua` in place, run this on the server once a day
+  (cron: `0 5 * * *`); it removes accounts created more than 30 days ago and listings left behind for a day:
+  ```sh
+  curl -s -X POST "http://127.0.0.1:7350/v2/rpc/remod_cleanup?http_key=$NAKAMA_HTTP_KEY&unwrap" -d '{"days":30}'
+  # {"accounts_failed":0,"accounts_removed":12,"days":30,"listings_removed":0}
+  ```
+  A game whose account is gone makes a new one the next time it logs in; a player online at that moment is reconnected
+  as a new account and rejoins its game (hence a quiet hour). Players' sessions can't call it.
+- **Chat log (optional):** the game's chat goes player to player inside the match, so the server stores none of it.
+  With `modules/chatlog.lua` in place, each line is written to Nakama's log for moderation (room, account, username,
+  text; `docker compose logs nakama | grep remod_chat`). It hooks every match message (`MatchDataSend`), changes
+  nothing and costs little; Nakama allows one such hook, so don't load another module that hooks `MatchDataSend`.
+  The sender's IP is off (`LOG_IP` in the file): your HTTPS proxy's access log already has addresses, and blocking one
+  is done there (a banned account can always make a new one). Tell your players if you log chat.
 - **Changing the server key:** edit `.env`, `docker compose up -d`, and give players the new key. Games with the old
   key can no longer log in.
 

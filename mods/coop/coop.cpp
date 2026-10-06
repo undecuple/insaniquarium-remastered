@@ -101,6 +101,7 @@ static int startShells = -1;                  // a guest: the shells of the host
 struct ChatLine { std::string text; unsigned color; DWORD at; };
 static std::deque<ChatLine> chat;
 static bool chatting;
+static bool screen, editing;   // the co-op screen is open; one of its text boxes is being typed in
 static std::string chatBuf;
 struct Mark { int slot, x, y; DWORD at; };
 static std::vector<Mark> marks;
@@ -840,17 +841,24 @@ static bool LocalKey(int vk) { return vk == api->config_int("screenshot", "key",
 
 static int InputFilter(unsigned msg, unsigned wp, long lp)
 {
-    if (state != Playing) return 0;
-    // chat: Enter opens a line, Enter sends it, Esc drops it; while typing, keys don't go to the game
+    if (state != Playing && !(state == Lobby && screen && !editing)) return 0;   // chat works in the lobby too
+    // chat: the chat key (Enter; the Keys tab) opens a line, Enter sends it, Esc drops it; while typing, keys don't go
+    // to the game
+    static bool skipChar;   // the character the chat key itself types (a letter key) isn't part of the line
     if (chatting)
     {
+        if (msg == WM_CHAR && skipChar) { skipChar = false; return 1; }
         if (msg == WM_KEYDOWN && wp == VK_RETURN) { chatting = false; SendChat(chatBuf); chatBuf.clear(); api->redraw(); }
         else if (msg == WM_KEYDOWN && wp == VK_ESCAPE) { chatting = false; chatBuf.clear(); api->redraw(); }
         else if (msg == WM_KEYDOWN && wp == VK_BACK) { if (!chatBuf.empty()) chatBuf.pop_back(); api->redraw(); }
         else if (msg == WM_CHAR && wp >= 32 && wp < 127 && chatBuf.size() < 80) { chatBuf += (char)wp; api->redraw(); }
         if (msg >= WM_KEYFIRST && msg <= WM_KEYLAST) return 1;
     }
-    else if (msg == WM_KEYDOWN && wp == VK_RETURN) { chatting = true; chatBuf.clear(); api->redraw(); return 1; }
+    else if (msg == WM_KEYDOWN && (int)wp == api->config_int("coop", "chat_key", VK_RETURN) && wp)
+    {
+        chatting = true; chatBuf.clear(); skipChar = wp != VK_RETURN; api->redraw(); return 1;
+    }
+    if (state != Playing) return 0;   // the rest is the game's input, in a game
     // a ping: middle click shows a ring where you point, for everyone (display only)
     if (msg == WM_MBUTTONDOWN)
     {
@@ -1546,7 +1554,6 @@ extern "C" __declspec(dllexport) int CoopPlaying() { return state == Playing ? 1
 
 // ---- the lobby screen ------------------------------------------------------------------------------------------------------
 static const int DialogId = 0x4e, DX = 30, DY = 20, DW = 580, DH = 440, CX = DX + 40, CW = DW - 80;
-static bool screen, editing;
 static std::string* editField;   // the box being typed into (the address, or a server setting)
 // the server settings view (Online tab): edited here, saved on Test and Done
 static bool serverView, srvTls;
@@ -1776,6 +1783,36 @@ static int Key(int vk, int down)
     return 1;
 }
 
+// chat lines: each shows for 10 s and fades out over the last 2 (all of them while typing); in a game at the bottom left,
+// newest at the bottom, in the lobby at the top (its panel fills the bottom), newest at the top
+static void DrawChat(void* g, bool top)
+{
+    void* f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE);
+    DWORD now = GetTickCount();
+    int y = top ? 18 : 446, step = top ? 20 : -20;
+    bool visible = false;
+    if (chatting)
+    {
+        std::string t = "Say: " + chatBuf + ((now / 400) % 2 ? "_" : "");
+        api->fill_rect(g, 6, y - 14, api->text_width_font(f10, t.c_str()) + 10, 18, 0xb0000000);
+        api->draw_text_font(g, f10, t.c_str(), 11, y, 0xffffffff);
+        y += step;
+        visible = true;
+    }
+    for (int i = (int)chat.size() - 1; i >= 0; i--)
+    {
+        DWORD age = now - chat[i].at;
+        if (age > 10000 && !chatting) continue;
+        unsigned a = chatting || age < 8000 ? 255 : (unsigned)(255 * (10000 - age) / 2000);
+        unsigned box = ((0x90 * a / 255) << 24), text = (a << 24) | (chat[i].color & 0xffffff);
+        api->fill_rect(g, 6, y - 14, api->text_width_font(f10, chat[i].text.c_str()) + 10, 18, box);
+        api->draw_text_font(g, f10, chat[i].text.c_str(), 11, y, text);
+        y += step;
+        visible = true;
+    }
+    if (visible && top) api->redraw();   // the lobby only repaints when something changes: keep the fade going
+}
+
 static void Overlay(void* g)
 {
     void* f12 = ui::Font(FONT_JUNGLEFEVER12OUTLINE), *f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE);
@@ -1842,22 +1879,7 @@ static void Overlay(void* g)
                     const char* t = rescueFish == f ? "SOS 1/2" : "SOS";
                     api->draw_text_font(g, f10, t, cx - api->text_width_font(f10, t) / 2, cy, (now / 250) % 2 ? 0xffff4040 : 0xffffd0d0);
                 }
-        // chat
-        int y = 446;
-        if (chatting)
-        {
-            std::string t = "Say: " + chatBuf + ((now / 400) % 2 ? "_" : "");
-            api->fill_rect(g, 6, y - 14, api->text_width_font(f10, t.c_str()) + 10, 18, 0xb0000000);
-            api->draw_text_font(g, f10, t.c_str(), 11, y, 0xffffffff);
-            y -= 20;
-        }
-        for (int i = (int)chat.size() - 1; i >= 0; i--)
-        {
-            if (now - chat[i].at > 10000 && !chatting) continue;
-            api->fill_rect(g, 6, y - 14, api->text_width_font(f10, chat[i].text.c_str()) + 10, 18, 0x90000000);
-            api->draw_text_font(g, f10, chat[i].text.c_str(), 11, y, chat[i].color);
-            y -= 20;
-        }
+        DrawChat(g, false);
         return;
     }
     if (reopenScreen && state == Lobby && ui::OnMainMenu(api) && ui::DialogCount(api) == 0) { reopenScreen = false; OpenScreen(); }
@@ -1973,6 +1995,7 @@ static void Overlay(void* g)
         else ui::FitText(api, g, f10, "The host picks the game and starts it.", CX, DY + 314, CW, ui::Cream);
     }
     ui::FitText(api, g, f10, status, CX, DY + DH - 82, CW, ui::White);
+    if (state == Lobby) { api->set_input_filter(InputFilter); DrawChat(g, true); }   // the filter takes the chat key in the lobby too
     ui::DrawTooltip(api, g);
 }
 

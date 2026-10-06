@@ -59,7 +59,7 @@ Step by step for Windows, Linux and Steam Deck: **[docs/INSTALL.md](docs/INSTALL
 | **continues** | When all your fish die, spend shells to get two guppies and keep going: 500 shells, then 1,000, 1,500... until you return to the main menu. Only offered when you have the shells | none |
 | **accessibility** | A red **!** over hungry fish, and each coin's value under it (no need to tell silver, gold and gems apart by colour) | none |
 | **achievements** | 31 achievements (coins, aliens, levels, pets, modes...) with shell rewards paid on the main menu; a banner when one unlocks; the list from **Achievements** on the Remastered page. Progress is saved per profile next to your saves | **F4** list |
-| **coop** | Co-op for 2-4 players over the network: **Co-op** on the Remastered page (or F7), one player hosts and the others join: **Online** through the mod's public server (a listed game, or a private one joined by its room code; no ports to open, nothing to set up), through **Steam**, by address, or through **your own server** (docs/SERVER.md). Everyone plays the host's profile (your own saves are never touched; shells you earn come home with you). Roles (Feeder, Gunner, Collector, Shopper), chat (Enter), pings (middle click), rescue a starving fish together, tougher tanks for more players (host's choice), an avatar on your pointer (a pet or fish portrait), **split money** (host's choice: everyone has their own money; coins pay whoever clicked them), join a game that has already started (while there's room), and **Versus** (host's choice: the first player to join steers the aliens with the pointer, click to dash, and tries to eat every fish). The host is in charge: only the host pauses, changes the speed, opens the menu or answers dialogs. Everyone needs the same mods | **F7**, Enter, middle click |
+| **coop** | Co-op for 2-4 players over the network: **Co-op** on the Remastered page (or F7), one player hosts and the others join: **Online** through the mod's public server (a listed game, or a private one joined by its room code; no ports to open, nothing to set up), through **Steam**, by address, or through **your own server** (docs/SERVER.md). Everyone plays the host's profile (your own saves are never touched; shells you earn come home with you). Roles (Feeder, Gunner, Collector, Shopper), chat (Enter, in the game and the lobby; lines fade after 10 s), pings (middle click), rescue a starving fish together, tougher tanks for more players (host's choice), an avatar on your pointer (a pet or fish portrait), **split money** (host's choice: everyone has their own money; coins pay whoever clicked them), join a game that has already started (while there's room), and **Versus** (host's choice: the first player to join steers the aliens with the pointer, click to dash, and tries to eat every fish). The host is in charge: only the host pauses, changes the speed, opens the menu or answers dialogs. Everyone needs the same mods | **F7**, Enter, middle click |
 | **mutators** | 15 optional rule changes for Adventure, Time Trial and Challenge, switched on one by one in the settings: hungry fish, double trouble (aliens come in twins), glass cannon, no pets, pacifist, heavy coins, tiny wallet ($2,500 cap), rich start ($1,000), hard mode, golden guppies, coin combos, tank events (feeding frenzy, lights out, currents), overeating, decay (corpses float until clicked away), gadgets (buy an auto-feeder, coin magnet and alien alarm) | none |
 | **fps** | A frame counter in the top-left corner | **F3** |
 | **screenshot** | Saves the game window as a PNG in the game folder's `screenshots` folder | **F12** |
@@ -84,6 +84,7 @@ red **!**.
 | **F12** | a screenshot | anywhere |
 | **F5** / **F6** / **F8** | pause / 0.75x / 2x (again: back to normal) | in a tank; in co-op only the host, for everyone |
 | **F3** | the frame counter | anywhere |
+| **Enter** | a chat line (Enter sends it, Esc drops it; only the players in that game see it; lines fade after 10 s) | in a co-op game or its lobby |
 | **Space** | the game's own pause dialog (moved to another key there, Space stops opening it) | in a tank |
 
 Built into Insaniquarium - Remastered Mod itself:
@@ -180,6 +181,7 @@ enabled=1          ; 0 = click coins as usual
 
 [coop]
 open_key=118       ; F7 on the main menu
+chat_key=13        ; Enter in a co-op game or lobby: a chat line
 port=27615         ; the TCP port the host listens on (open it in your router to host over the internet)
 name=              ; your name in co-op (empty = your profile's name)
 avatar=1           ; your avatar in co-op: 0 none, 1 guppy, 2-31 the pets and special fish (or the Avatar button)
@@ -236,7 +238,10 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
 - Insaniquarium - Remastered Mod only uses the network for co-op, and only once you host or join a game (direct
   connections to the address you typed, Steam's lobbies and relay, or the co-op server: the mod's public one unless you
   set your own; it sees an anonymous id made by your game, the room codes and the game's messages). Nothing else goes online:
-  no updates, no statistics.
+  no updates, no statistics. Your profiles, achievements and records never leave your computer. A co-op server keeps
+  only that anonymous account (servers may remove old ones; the game makes a new one by itself) and, while you host a
+  listed game, its listing. A server may log co-op chat lines for moderation, and like any web server it sees your IP
+  address.
 - Some antivirus programs distrust DLLs that change how a game behaves; that's a false alarm, but you can build it
   from source yourself (see DEVELOPING.md), and every release is built by GitHub Actions from the tagged commit
   (reproducible: the same commit gives the same zip, checksums on the release page).

@@ -91,6 +91,9 @@ and start it again.
 - **Playing without mods for once:** hold **Shift** while the game starts.
 
 ### Co-op
+- **In a game and its lobby:** **Enter** opens a chat line that only the players in that game see (Enter sends, Esc
+  drops; lines fade after 10 seconds; the key can be changed on the Keys tab); a **middle click** shows everyone where you point. Only the host changes the speed and
+  the rules (mutators): the guests' games follow.
 - **Online (the default):** nothing to set up. The co-op screen's **Online** tab uses the mod's public server: host a
   listed or private game, or join one from the list or with its room code.
 - **Over Steam:** needs Valve's `steam_api.dll`. Usually nothing to do: the mod borrows a copy another Steam game of
