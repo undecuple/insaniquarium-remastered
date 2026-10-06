@@ -1,0 +1,30 @@
+# Dependency updates through Dependabot: the GitHub Actions in .github/workflows and the co-op server's images in
+# server/docker-compose.yml. The MinHook and Steamworks.NET versions pinned in tools/fetch-deps.sh are Renovate's
+# (renovate.json, limited to those so the two never open the same pull request). Nothing merges itself: the build
+# workflow checks each pull request; try the build in the game before merging.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions:            # one pull request for all of them
+        patterns: ["*"]
+    commit-message:
+      prefix: "Deps:"
+    labels: ["dependencies"]
+
+  - package-ecosystem: "docker-compose"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    ignore:
+      # a new Postgres major version needs a data migration (dump and restore): never proposed
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "Deps:"
+    labels: ["dependencies"]

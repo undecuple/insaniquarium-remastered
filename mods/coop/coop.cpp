@@ -148,6 +148,10 @@ static void Send(Peer& p, uint8_t type, const std::string& payload)
 static void Broadcast(uint8_t type, const std::string& payload) { for (int i = 1; i < MaxPlayers; i++) if (peers[i].used) Send(peers[i], type, payload); }
 template <typename T> static void Put(std::string& s, T v) { s.append((const char*)&v, sizeof v); }
 template <typename T> static T Get(const std::string& s, size_t& o) { T v{}; if (o + sizeof v <= s.size()) memcpy(&v, s.data() + o, sizeof v); o += sizeof v; return v; }
+// the rest of a message from offset o (empty when a short message left o past its end: substr would throw)
+static std::string Rest(const std::string& s, size_t o) { return o < s.size() ? s.substr(o) : std::string(); }
+// n bytes at offset o fit in s (o may already be past the end after reading a short message; no overflow)
+static bool Fits(const std::string& s, size_t o, size_t n) { return o <= s.size() && n <= s.size() - o; }
 
 enum { MHello = 1, MWelcome, MLobby, MStart, MInput, MBundle, MAck, MHash, MDesync, MEnd, MBye, MRefuse, MRole, MChat, MMark, MAvatar, MSnap, MJoin, MRejoin };
 
@@ -640,6 +644,7 @@ static void ProcessInput(int i)
     while (p.in.size() >= 3)
     {
         uint16_t len; memcpy(&len, p.in.data(), 2);
+        if (len == 0) { Log("a malformed message from player %d: dropped", i); p.in.clear(); break; }   // every message has its type byte
         if (p.in.size() < (size_t)len + 2) break;
         uint8_t type = (uint8_t)p.in[2];
         std::string m = p.in.substr(3, len - 1);
@@ -789,7 +794,7 @@ static void Handle(int from, uint8_t type, const std::string& m)
             scaling = Get<uint8_t>(m, o) != 0;
             versus = Get<uint8_t>(m, o) != 0;
             splitMoney = Get<uint8_t>(m, o) != 0;
-            start.profile = m.substr(o);
+            start.profile = Rest(m, o);
             joining = type == MJoin;   // joining: no start of our own; the host's next snapshot brings us in
             startPending = !joining;
             vsDash = vsCooldown = 0; vsFire = false; vsOver = false;
@@ -803,7 +808,7 @@ static void Handle(int from, uint8_t type, const std::string& m)
             int t = Get<int32_t>(m, o), idx = Get<uint16_t>(m, o), count = Get<uint16_t>(m, o);
             if (idx == 0) { snapData.clear(); snapTick = t; snapParts = count; snapGot = 0; }
             if (idx == 0 && joining && tick < 0) { tick = t; bundles.erase(bundles.begin(), bundles.lower_bound(t)); }
-            if (t == snapTick && idx == snapGot) { snapData += m.substr(o); snapGot++; }
+            if (t == snapTick && idx == snapGot) { snapData += Rest(m, o); snapGot++; }
             break;
         }
         case MBundle:
@@ -1466,7 +1471,7 @@ static bool LoadSnapshot(const std::string& s)
     vsFire = Get<uint8_t>(s, o) != 0; vsOver = Get<uint8_t>(s, o) != 0;
     for (int i = 0; i < MaxPlayers; i++) { lastX[i] = Get<int16_t>(s, o); lastY[i] = Get<int16_t>(s, o); }
     uint32_t ml = Get<uint32_t>(s, o);
-    if (o + ml > s.size()) return false;
+    if (!Fits(s, o, ml)) return false;
     if (HMODULE m = GetModuleHandleA("mutators.dll"))
         if (auto f = reinterpret_cast<void (*)(const void*, int)>(GetProcAddress(m, "MutatorsLoad"))) f(s.data() + o, (int)ml);
     o += ml;
@@ -1475,11 +1480,11 @@ static bool LoadSnapshot(const std::string& s)
         if (auto f = reinterpret_cast<void (*)(int)>(GetProcAddress(m, "ContinuesSetBought"))) f(cb);
     int ft = Get<int32_t>(s, o); bool pz = Get<uint8_t>(s, o) != 0;
     uint32_t pl = Get<uint32_t>(s, o);
-    if (o + pl > s.size()) return false;
+    if (!Fits(s, o, pl)) return false;
     std::string prof = s.substr(o, pl);
     o += pl;
     uint32_t n = Get<uint32_t>(s, o);
-    if (o + n > s.size()) return false;
+    if (!Fits(s, o, n)) return false;
     captured = s.substr(o, n);
     if (joining)
     {   // a joiner: from the main menu into the game, as the start does (but the board comes from the snapshot)
@@ -1604,9 +1609,13 @@ static void CopyText(const std::string& t)
     EmptyClipboard();
     if (HGLOBAL h = GlobalAlloc(GMEM_MOVEABLE, t.size() + 1))
     {
-        memcpy(GlobalLock(h), t.c_str(), t.size() + 1);
-        GlobalUnlock(h);
-        SetClipboardData(CF_TEXT, h);
+        if (void* d = GlobalLock(h))
+        {
+            memcpy(d, t.c_str(), t.size() + 1);
+            GlobalUnlock(h);
+            SetClipboardData(CF_TEXT, h);
+        }
+        else GlobalFree(h);
     }
     CloseClipboard();
 }
