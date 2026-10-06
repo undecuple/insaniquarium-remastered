@@ -204,7 +204,9 @@ tools/                 fetch-deps.sh (MinHook), gen-proxy.py (export stubs), run
 server/                your own co-op server: Nakama + Postgres compose files (docs/SERVER.md)
 install-steam.bat      Windows installer for the Steam release (copied into build/dist)
 .github/workflows/      CI: build on every push and pull request, release on a version tag
-remastered-mod.ini          default settings (copied to build/dist/mods)
+remastered-mod.ini          default settings (build/dist/mods/remastered-mod.default.ini: the core makes the player's
+                            remastered-mod.ini from it and adds new keys later; kDefaultChanges in core.cpp moves
+                            settings still at an old default when a version changes one)
 ```
 Third-party: MinHook (BSD-2-Clause, Tsuda Kageyu), downloaded by `tools/fetch-deps.sh`.
 

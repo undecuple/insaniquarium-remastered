@@ -33,7 +33,8 @@ if [ -z "${NOMODS:-}" ]; then   # NOMODS=1: the unmodded game, for comparison
     L="$T/compat/pfx/drive_c/ProgramData/PopCap Games/Insaniquarium"; mkdir -p "$L"; cp "$DIST"/ddraw.dll "$L/"
   fi
 fi
-[ -n "${NOMODS:-}" ] || [ -f "$T/game/mods/remastered-mod.ini" ] || cp "$DIST/mods/remastered-mod.ini" "$T/game/mods/"
+# the default settings and the file list (the core makes remastered-mod.ini from the defaults when there is none)
+[ -n "${NOMODS:-}" ] || cp "$DIST/mods/remastered-mod.default.ini" "$DIST/mods/remod-files.txt" "$T/game/mods/" 2>/dev/null || true
 # INI='display.window=native display.scale=integer': settings for this run (section.key=value, set in a fresh copy of
 # the default ini; a key the default doesn't have is added to the end of its section, or in a new section)
 if [ -n "${INI:-}" ]; then

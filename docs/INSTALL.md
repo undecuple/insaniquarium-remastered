@@ -10,7 +10,7 @@ files, and can be undone at any time (see [Uninstalling](#uninstalling)).
   *Extract All* on Windows; *Extract here* on Linux). You get this folder:
   ```
   ddraw.dll   install-steam.bat   install-steam.sh   INSTALL.txt   README.txt   CHANGELOG.txt   LICENSES.txt
-  mods\       (the mods and remastered-mod.ini, the settings)
+  mods\       (the mods and their default settings)
   ```
 - Optional: compare the zip with `SHA256SUMS.txt` from the download page (Windows: `certutil -hashfile <zip> SHA256`
   in a command prompt; Linux: `sha256sum <zip>`).
@@ -105,23 +105,33 @@ and start it again.
 - **By address:** nothing to install; the host opens TCP port 27615 (or uses a VPN), see the README.
 
 ## Updating to a new version
-Install the new version the same way, over the old one (let it replace the files). Your settings
-(`mods/remastered-mod.ini`) are kept on Linux; on Windows, keep your own copy of that file if you changed it and put it
-back afterwards. Steam on Windows: run `install-steam.bat` again.
+Close the game, then install the new version the same way, over the old one (let it replace the files), and run the
+installer again (`install-steam.bat` / `install-steam.sh`: the loader in the second folder has to be updated too).
+- **Your settings are kept.** The zip has no `remastered-mod.ini`, only `remastered-mod.default.ini`: at its next start
+  the game adds the settings the new version brought to your own file and keeps your values. A setting you never
+  changed moves to a new default when a version changes one (the log says which).
+- **Files a new version dropped are removed** at the next start (from `mods/remod-files.txt`); other mods in `mods\`
+  are never touched.
+- If the loader and the mods don't match (the installer wasn't run again), the title screen says so.
+- Updating from 0.1.0: it had no file list, so a mod 0.1.0 had and a later version drops would stay; 0.2.0 drops none.
 
 ## Uninstalling
 Your profiles keep working without the mod.
 - **Windows, Steam:** in the game folder, open a command prompt (type `cmd` in the folder's address bar and press
-  Enter) and run `install-steam.bat uninstall`. Then delete `ddraw.dll`, `install-steam.bat` and the `mods` folder from
-  the game folder.
-- **Linux/Steam Deck, Steam:** in the unzipped download folder, `bash install-steam.sh --uninstall`; then delete the
-  game folder's `mods` folder if you don't want the settings and log either. Remove the launch option if you set one.
+  Enter) and run `install-steam.bat uninstall`. It removes the loader and the mod's own files from `mods` (other mods,
+  your settings and the log stay). Then delete `ddraw.dll` and `install-steam.bat` from the game folder, and `mods` if
+  nothing else is in it.
+- **Linux/Steam Deck, Steam:** in the unzipped download folder, `bash install-steam.sh --uninstall`: it removes the
+  loader and the mod's own files (other mods, your settings and the log stay); delete the game folder's `mods` folder
+  if you don't want the settings and log either. Remove the launch option if you set one.
 
 The save backup (`userdata-before-remastered-mod`) can be deleted once you're happy.
 
 ## Problems
 | What happens | What to do |
 |---|---|
+| The title screen says the loader doesn't match the mods | The installer wasn't run after an update: close the game and run `install-steam.bat` / `install-steam.sh` again. |
+| An installer says Insaniquarium is running | Close the game (and its screensaver), then run it again. |
 | No "Remastered Mod is on" message, no `mods/remastered-mod.log` | The loader isn't used. Windows: did `install-steam.bat` say *installed*? Linux: run the script again, or set the launch option / DLL override. |
 | The log says "not the Insaniquarium Deluxe 1.1 game these mods are for" | A different version of the game: the mod stays off on purpose. |
 | The game doesn't start any more | Uninstall as above (or hold Shift while starting), and look at the end of `mods/remastered-mod.log`. |
