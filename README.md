@@ -70,9 +70,11 @@ the mod's: **Co-op**, **Extra Modes**, **Achievements**, **Mod Settings**, **Abo
 switch them off or on) and **Records**; **Main Menu** goes back. The settings page also opens with **F2** anywhere.
 
 Built into Insaniquarium - Remastered Mod itself:
-- **Native-resolution window** (on by default; Display tab of the settings): the game fills your screen in a
-  borderless window, scaled up with black bars at the sides, instead of a small 640x480 window or a blurry fullscreen
-  mode. If the game was set to fullscreen, it switches to the window as soon as it starts.
+- **Large window** (on by default; Display tab of the settings): the game opens in a normal window as large as your
+  screen allows (2x on a 1080p screen, 3x on 1440p...), resizable and maximisable, scaled up sharply with the game's own
+  cursor at the same size, instead of a small 640x480 window or a blurry fullscreen mode. **Borderless** fills the whole
+  screen instead, with black bars at the sides. If the game was set to fullscreen, it switches to the window as soon as
+  it starts.
 - **Safe start:** hold **Shift** while the game starts to play without mods this time.
 - **Crash protection:** if a mod goes wrong, it's switched off with a message ("... crashed and was switched off") and
   the game keeps going.
@@ -129,7 +131,7 @@ any text editor (comments go on their own lines, starting with `;`). A mod can b
 enabled=1          ; 0 = Insaniquarium - Remastered Mod off (same as holding Shift at start, but permanent)
 
 [display]
-window=native      ; normal = the game's own 640x480 window (or its fullscreen mode, set in the game's Options)
+window=native      ; borderless = fills the screen; normal = the game's own 640x480 window (or its fullscreen mode)
 scale=fit          ; integer = only whole multiples (2x, 3x...): sharpest pixels, wider black bars
 
 [autosave]
@@ -195,7 +197,7 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
 | Log says "safe mode" | Shift was held while the game started, or `[core] enabled=0`. |
 | A message says a mod "crashed and was switched off" | That mod is off until the next start; the log names it and where it failed. Please report it. |
 | The game doesn't start at all | Remove the loader (Windows: `install-steam.bat uninstall`; Linux: `install-steam.sh --uninstall`) and tell us what the log said (open an issue). |
-| The game is still small or fullscreen | The log says "native window: ..." when it's on. If the game was set to fullscreen, it switches to the native window at its first frame. To turn it off: Display tab, or `window=normal` (the game stays windowed; switch to fullscreen in its Options). |
+| The game is still small or fullscreen | The log says "native window: ..." when it's on. If the game was set to fullscreen, it switches to the native window at its first frame. To turn it off: Display tab (Window: Game's own), or `window=normal` (the game stays windowed; switch to fullscreen in its Options). |
 | Speed keys do nothing | They only work inside a tank and not in co-op (every player's game must run at the same speed), and the game window must have focus. Check the keys in `remastered-mod.ini`. |
 | Co-op says "Out of sync" | The players' games no longer match; the host sends everyone its game and you carry on from there ("Back in step with the host"), a few moments later than you were. If it keeps happening, report it with every player's `remastered-mod.log` (it records what differed): usually different mod versions. |
 | Co-op: "That game has already started or is full" | The game has four players already. |

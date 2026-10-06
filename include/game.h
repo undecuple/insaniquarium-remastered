@@ -138,6 +138,9 @@ constexpr uintptr_t Graphics_dtor = 0x004556f0;            // void (Graphics*)
 // ---- field offsets ------------------------------------------------------------------------------------------------
 constexpr int App_mFrameTime = 0x454;   // int: ms per update tick (28; the framework's default is 10)
 constexpr int App_mBoard     = 0x730;   // Board*
+constexpr int App_mCursorImages = 0x3b4;  // Image*[]: the custom cursors by number (0 pointer, 1 hand, 2 dragging, 3 text); NULL = Windows' own (EnforceCursor @00486010)
+constexpr int App_mCursorNum = 0x4b0;     // int: the cursor the game wants now
+constexpr int App_mMouseIn = 0x4cc;       // bool: the pointer is over the game's 640x480 client area (from GetCursorPos, on a timer)
 constexpr int App_mIsWindowed = 0x343;  // bool: windowed (not fullscreen); set from the registry's ScreenMode == 0 (ReadFromRegistry @0047eda0)
 constexpr int App_mIsScreenSaver = 0x358; // bool
 constexpr int App_mDeferredCount = 0x364; // uint: queued window messages (std::list<MSG> mDeferredMessages, head at +0x360)

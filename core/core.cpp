@@ -784,6 +784,7 @@ std::string CoreConfigString(const char* section, const char* key, const char* d
     return b;
 }
 void CoreToast(const char* text) { Toast(text); }
+void* CoreApp() { return App(); }
 bool CoreGameWindowed() { void* a = App(); return a && at<bool>(a, App_mIsWindowed); }
 
 // the game's DirectDraw entry points: load the mods first (main thread, outside the loader lock), then the real thing

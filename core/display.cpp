@@ -1,22 +1,28 @@
 // Native-resolution window ([display] window=native in remastered-mod.ini; applies from the next start).
 //
 // The game draws a 640x480 frame and, in windowed mode, copies it each frame onto the DirectDraw primary surface (the
-// screen) at its window's position. With this setting on, the game's window becomes a borderless window covering the
-// whole monitor at its native resolution, and that copy is stretched into the largest 4:3 rectangle that fits (scale=fit)
-// or the largest whole-number multiple (scale=integer), centred, with black bars around it. Mouse positions are mapped
-// back to the game's 640x480 coordinates. Everything is done at the DirectDraw level, through the proxy: the
+// screen) at its window's position. With this setting on, the game's window becomes a normal, resizable window sized
+// to the largest whole multiple of 640x480 that fits the screen (window=native; window=borderless: a borderless window
+// covering the whole monitor), and that copy is stretched into the largest 4:3 rectangle that fits the window
+// (scale=fit) or the largest whole-number multiple (scale=integer), centred, with black bars around it. Mouse positions
+// are mapped back to the game's 640x480 coordinates: in its mouse messages, and in its own GetCursorPos (the game
+// decides from it whether the pointer is over its 640x480 client area, and shows its own cursor only then). Everything is done at the DirectDraw level, through the proxy: the
 // DirectDraw object's CreateSurface is wrapped to spot the primary surface, and the primary surface's Blt to redirect
 // the copy. The game must be in windowed mode: the setting writes the game's own ScreenMode=0 to the registry, which it
 // reads at start, hence the restart.
 #include <windows.h>
 #include <string>
+#include <string.h>
 #include "display.h"
+#include "game.h"
+#include <vector>
 
 void CoreLog(const char* fmt, ...);
 int CoreConfigInt(const char* section, const char* key, int def);
 std::string CoreConfigString(const char* section, const char* key, const char* def);
 void CoreToast(const char* text);
 bool CoreGameWindowed();
+void* CoreApp();
 
 namespace {
 
@@ -25,7 +31,7 @@ constexpr DWORD DDSCAPS_PRIMARYSURFACE = 0x200;
 constexpr DWORD DDBLT_COLORFILL = 0x400, DDBLT_WAIT = 0x1000000;
 constexpr int VtCreateSurface = 6, VtBlt = 5;   // IDirectDraw(7)::CreateSurface, IDirectDrawSurface(7)::Blt
 
-bool gOn, gInteger, gWindowDone;
+bool gOn, gInteger, gBorderless, gWindowDone;
 HWND gWnd;
 void* gPrimary[2];
 void* gFrame;          // the surface the game copies its frame from (its 640x480 draw surface)
@@ -65,19 +71,212 @@ void Layout()
     gTarget = { (w - tw) / 2, (h - th) / 2, (w - tw) / 2 + tw, (h - th) / 2 + th };
 }
 
-// the game's window: borderless, covering the monitor it's on
+// the game's window: a resizable window of the largest whole multiple of 640x480 that fits the screen (taskbar and title
+// bar included), centred; or (borderless) a borderless window covering the monitor it's on
 void MakeWindowNative()
 {
     gWindowDone = true;
     HMONITOR mon = MonitorFromWindow(gWnd, MONITOR_DEFAULTTONEAREST);
     MONITORINFO mi{ sizeof mi };
     GetMonitorInfoA(mon, &mi);
-    SetWindowLongA(gWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
-    SetWindowPos(gWnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left,
-                 mi.rcMonitor.bottom - mi.rcMonitor.top, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    if (gBorderless)
+    {
+        SetWindowLongA(gWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+        SetWindowPos(gWnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top, mi.rcMonitor.right - mi.rcMonitor.left,
+                     mi.rcMonitor.bottom - mi.rcMonitor.top, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    }
+    else
+    {
+        DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+        const RECT& wa = mi.rcWork;
+        RECT r{};
+        int k = 1;
+        for (int n = 2; n <= 16; n++)
+        {
+            RECT t{ 0, 0, GameW * n, GameH * n };
+            AdjustWindowRect(&t, style, FALSE);
+            if (t.right - t.left > wa.right - wa.left || t.bottom - t.top > wa.bottom - wa.top) break;
+            k = n;
+        }
+        r = { 0, 0, GameW * k, GameH * k };
+        AdjustWindowRect(&r, style, FALSE);
+        int w = r.right - r.left, h = r.bottom - r.top;
+        SetWindowLongA(gWnd, GWL_STYLE, style);
+        SetWindowPos(gWnd, HWND_TOP, wa.left + (wa.right - wa.left - w) / 2, wa.top + (wa.bottom - wa.top - h) / 2, w, h,
+                     SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    }
     Layout();
-    CoreLog("native window: %ldx%ld, game frame at %ld,%ld scale %.2f%s", mi.rcMonitor.right - mi.rcMonitor.left,
-            mi.rcMonitor.bottom - mi.rcMonitor.top, gTarget.left, gTarget.top, gScale, gInteger ? " (integer)" : "");
+    RECT c;
+    GetClientRect(gWnd, &c);
+    CoreLog("native window: %s %ldx%ld, game frame at %ld,%ld scale %.2f%s", gBorderless ? "borderless" : "window",
+            c.right, c.bottom, gTarget.left, gTarget.top, gScale, gInteger ? " (integer)" : "");
+}
+
+// the game's own GetCursorPos (its import, so Windows' window dragging and resizing still see the real pointer): the
+// pointer's position inside the scaled frame, as if the window were 640x480; on the black bars, a point outside it
+using GetCursorPosFn = BOOL(WINAPI*)(POINT*);
+GetCursorPosFn gRealGetCursorPos;
+BOOL WINAPI GameGetCursorPos(POINT* p)
+{
+    BOOL ok = gRealGetCursorPos(p);
+    if (!ok || !p || !gOn || !gWindowDone || !gWnd || gScale <= 0) return ok;
+    POINT c = *p;
+    ScreenToClient(gWnd, &c);
+    if (c.x < gTarget.left || c.y < gTarget.top || c.x >= gTarget.right || c.y >= gTarget.bottom) return ok;   // on a bar or outside
+    POINT g{ (LONG)((c.x - gTarget.left) / gScale), (LONG)((c.y - gTarget.top) / gScale) };
+    if (g.x > GameW - 1) g.x = GameW - 1;
+    if (g.y > GameH - 1) g.y = GameH - 1;
+    ClientToScreen(gWnd, &g);
+    *p = g;
+    return ok;
+}
+
+// The game's own cursor (the fish pointer, the hand...) is drawn by the game straight onto the screen at 640x480
+// positions, which the scaling can't follow. In a native window the game's cursor pictures are taken away from it each
+// frame (so it falls back to Windows cursors) and its SetCursor calls get Windows cursors made from those same pictures
+// (images\cursor_*.gif with their _cursor_*.gif alpha masks), scaled like the frame: the same cursor, at the right size.
+constexpr int CursorKinds = 4;   // pointer, hand, dragging, text
+const char* const CursorFile[CursorKinds] = { "cursor_pointer", "cursor_hand", "cursor_dragging", "cursor_text" };
+void* gGameCursorImage[CursorKinds];   // the game's pictures, handed back when the window isn't native any more
+HCURSOR gCursor[CursorKinds];
+float gCursorScale;
+bool gCursorFailed;
+
+struct Picture { int w = 0, h = 0; std::vector<unsigned> argb; };
+// a picture through GDI+ (loaded when first needed): ARGB pixels
+bool LoadPicture(const char* name, Picture& out)
+{
+    using StartupFn = int(WINAPI*)(ULONG_PTR*, const void*, void*);
+    using FromFileFn = int(WINAPI*)(const wchar_t*, void**);
+    using SizeFn = int(WINAPI*)(void*, UINT*);
+    using PixelFn = int(WINAPI*)(void*, int, int, unsigned*);
+    using DisposeFn = int(WINAPI*)(void*);
+    static HMODULE m;
+    static FromFileFn fromFile; static SizeFn width, height; static PixelFn pixel; static DisposeFn dispose;
+    if (!m)
+    {
+        if (!(m = LoadLibraryA("gdiplus.dll"))) return false;
+        struct { UINT32 version = 1; void* callback = nullptr; BOOL noThread = FALSE, noCodecs = FALSE; } in;
+        ULONG_PTR token;
+        auto start = (StartupFn)GetProcAddress(m, "GdiplusStartup");
+        fromFile = (FromFileFn)GetProcAddress(m, "GdipCreateBitmapFromFile");
+        width = (SizeFn)GetProcAddress(m, "GdipGetImageWidth");
+        height = (SizeFn)GetProcAddress(m, "GdipGetImageHeight");
+        pixel = (PixelFn)GetProcAddress(m, "GdipBitmapGetPixel");
+        dispose = (DisposeFn)GetProcAddress(m, "GdipDisposeImage");
+        if (!start || !fromFile || !width || !height || !pixel || !dispose || start(&token, &in, nullptr) != 0) { fromFile = nullptr; return false; }
+    }
+    if (!fromFile) return false;
+    wchar_t path[MAX_PATH];
+    swprintf(path, MAX_PATH, L"images\\%hs.gif", name);
+    void* bmp = nullptr;
+    if (fromFile(path, &bmp) != 0 || !bmp) return false;
+    UINT w = 0, h = 0;
+    width(bmp, &w); height(bmp, &h);
+    out.w = (int)w; out.h = (int)h;
+    out.argb.assign(w * h, 0);
+    for (UINT y = 0; y < h; y++)
+        for (UINT x = 0; x < w; x++) pixel(bmp, (int)x, (int)y, &out.argb[y * w + x]);
+    dispose(bmp);
+    return true;
+}
+
+// a Windows cursor from the game's picture and its alpha mask, scaled (nearest pixel); the hot spot is the middle, where
+// the game centres its cursor pictures on the pointer
+HCURSOR MakeCursor(int kind, float scale)
+{
+    Picture pic, mask;
+    if (!LoadPicture(CursorFile[kind], pic) || pic.w <= 0) return nullptr;
+    bool hasMask = LoadPicture((std::string("_") + CursorFile[kind]).c_str(), mask) && mask.w == pic.w && mask.h == pic.h;
+    int w = (int)(pic.w * scale + 0.5f), h = (int)(pic.h * scale + 0.5f);
+    BITMAPV5HEADER bi{};
+    bi.bV5Size = sizeof bi; bi.bV5Width = w; bi.bV5Height = -h; bi.bV5Planes = 1; bi.bV5BitCount = 32; bi.bV5Compression = BI_BITFIELDS;
+    bi.bV5RedMask = 0x00ff0000; bi.bV5GreenMask = 0x0000ff00; bi.bV5BlueMask = 0x000000ff; bi.bV5AlphaMask = 0xff000000;
+    void* bits = nullptr;
+    HDC dc = GetDC(nullptr);
+    HBITMAP color = CreateDIBSection(dc, reinterpret_cast<BITMAPINFO*>(&bi), DIB_RGB_COLORS, &bits, nullptr, 0);
+    ReleaseDC(nullptr, dc);
+    if (!color || !bits) return nullptr;
+    auto out = static_cast<unsigned*>(bits);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+        {
+            int sx = (int)(x / scale), sy = (int)(y / scale);
+            if (sx >= pic.w) sx = pic.w - 1;
+            if (sy >= pic.h) sy = pic.h - 1;
+            unsigned p = pic.argb[sy * pic.w + sx];
+            unsigned a = hasMask ? (mask.argb[sy * pic.w + sx] >> 16) & 0xff : p >> 24;
+            out[y * w + x] = (a << 24) | (p & 0xffffff);
+        }
+    HBITMAP monochrome = CreateBitmap(w, h, 1, 1, nullptr);
+    ICONINFO ii{ FALSE, (DWORD)(w / 2), (DWORD)(h / 2), monochrome, color };
+    HCURSOR c = (HCURSOR)CreateIconIndirect(&ii);
+    DeleteObject(monochrome);
+    DeleteObject(color);
+    return c;
+}
+
+// each frame of a native window: the game's cursor pictures out of its hands, the cursors made for this scale
+void TakeGameCursors(bool native)
+{
+    void* app = CoreApp();
+    if (!app) return;
+    auto images = &game::at<void*>(app, game::App_mCursorImages);
+    for (int i = 0; i < CursorKinds; i++)
+    {
+        if (native && images[i]) { gGameCursorImage[i] = images[i]; images[i] = nullptr; }
+        else if (!native && !images[i] && gGameCursorImage[i]) images[i] = gGameCursorImage[i];
+    }
+    if (!native || gCursorFailed || gCursorScale == gScale) return;
+    gCursorScale = gScale;
+    for (int i = 0; i < CursorKinds; i++)
+    {
+        if (gCursor[i]) DestroyCursor(gCursor[i]);
+        gCursor[i] = MakeCursor(i, gScale);
+    }
+    if (!gCursor[0]) { gCursorFailed = true; CoreLog("native window: couldn't make the game's cursors (Windows' own are used)"); }
+}
+
+using SetCursorFn = HCURSOR(WINAPI*)(HCURSOR);
+SetCursorFn gRealSetCursor;
+HCURSOR WINAPI GameSetCursor(HCURSOR c)
+{
+    void* app = CoreApp();
+    if (gOn && gWindowDone && app && game::at<bool>(app, game::App_mMouseIn))
+    {
+        int kind = game::at<int>(app, game::App_mCursorNum);
+        if (kind >= 0 && kind < CursorKinds && gCursor[kind]) c = gCursor[kind];
+    }
+    return gRealSetCursor(c);
+}
+
+// replaces one import of the game's exe (by DLL and function name); returns the old address
+void* PatchImport(const char* dll, const char* fn, void* to)
+{
+    auto base = reinterpret_cast<unsigned char*>(GetModuleHandleA(nullptr));
+    auto dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
+    auto nt = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
+    auto& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+    if (!dir.VirtualAddress) return nullptr;
+    for (auto imp = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + dir.VirtualAddress); imp->Name; imp++)
+    {
+        if (lstrcmpiA(reinterpret_cast<char*>(base + imp->Name), dll) != 0 || !imp->OriginalFirstThunk) continue;
+        auto names = reinterpret_cast<IMAGE_THUNK_DATA*>(base + imp->OriginalFirstThunk);
+        auto addrs = reinterpret_cast<IMAGE_THUNK_DATA*>(base + imp->FirstThunk);
+        for (; names->u1.AddressOfData; names++, addrs++)
+        {
+            if (IMAGE_SNAP_BY_ORDINAL(names->u1.Ordinal)) continue;
+            auto byName = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(base + names->u1.AddressOfData);
+            if (strcmp(reinterpret_cast<char*>(byName->Name), fn) != 0) continue;
+            DWORD old;
+            VirtualProtect(&addrs->u1.Function, sizeof(void*), PAGE_READWRITE, &old);
+            void* prev = reinterpret_cast<void*>(addrs->u1.Function);
+            addrs->u1.Function = reinterpret_cast<uintptr_t>(to);
+            VirtualProtect(&addrs->u1.Function, sizeof(void*), old, &old);
+            return prev;
+        }
+    }
+    return nullptr;
 }
 
 struct DDBltFX { DWORD dwSize; DWORD pad[24]; };   // DDBLTFX: 100 bytes; dwFillColor is at offset 0x50
@@ -96,9 +295,10 @@ HRESULT BltCommon(int v, void* self, RECT* dst, void* src, RECT* srcRect, DWORD 
     if (self == gPrimary[v] && src && !(flags & DDBLT_COLORFILL)) { gFrame = src; gFrameVersion = v; }   // the game's frame, for screenshots
     if (self != gPrimary[v] || !gOn || !gWnd || !dst || !src) return blt(self, dst, src, srcRect, flags, fx);
     // switched to fullscreen in the game's options: leave it alone, and redo the window when it comes back windowed
-    if (!CoreGameWindowed()) { gWindowDone = false; return blt(self, dst, src, srcRect, flags, fx); }
+    if (!CoreGameWindowed()) { gWindowDone = false; TakeGameCursors(false); return blt(self, dst, src, srcRect, flags, fx); }
     if (!gWindowDone) MakeWindowNative();
     else Layout();
+    if (gRealSetCursor) TakeGameCursors(true);
     POINT o{ 0, 0 };
     ClientToScreen(gWnd, &o);
     // the game aimed at its 640x480 client area: turn its destination back into frame coordinates, then scale
@@ -177,10 +377,14 @@ static void SetWindowedForNextStart(DWORD* previous)
 void DisplayInit()
 {
     std::string mode = CoreConfigString("display", "window", "native");   // the default: native (window=normal turns it off)
-    gOn = mode == "native";
+    gBorderless = mode == "borderless";
+    gOn = mode == "native" || gBorderless;
     gInteger = CoreConfigString("display", "scale", "fit") == "integer";
     gWanted = gOn;
     if (!gOn) return;
+    if (void* prev = PatchImport("user32.dll", "GetCursorPos", (void*)&GameGetCursorPos)) gRealGetCursorPos = (GetCursorPosFn)prev;
+    else CoreLog("native window: the game's GetCursorPos not found (its own cursor may show only in the top-left corner)");
+    if (void* prev = PatchImport("user32.dll", "SetCursor", (void*)&GameSetCursor)) gRealSetCursor = (SetCursorFn)prev;
     // the game must start windowed: its own setting, read at start (so it counts from the next start if it was off)
     DWORD screenMode = 0;
     SetWindowedForNextStart(&screenMode);
