@@ -18,8 +18,8 @@ Consequences for installing:
   too. Player steps: [INSTALL.md](INSTALL.md).
 
 ## Notes
-Under Proton the game starts fullscreen by default (a scaled fake display mode); it plays fine, and windowed
-(Options → uncheck Fullscreen) works too. If the Steam overlay misbehaves with the DirectDraw game, turn it off for it.
+Under Proton the game starts fullscreen by default (a scaled fake display mode); with the mod, it opens
+in the window you chose instead. If the Steam overlay misbehaves with the DirectDraw game, turn it off for it.
 
 ## Steam for co-op
 Works (2026-10-05: lobby created in the Steam release, listed and found from another process, code copied). Not yet

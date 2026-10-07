@@ -561,6 +561,18 @@ void PlayerFullscreen(void* app, bool wantFull, int is3d)
     SwitchDisplayTo(app, next, is3d);
 }
 
+// [display] window=fullscreen (the game's own screen-mode change, a choice until 0.2.2): borderless now, which fills the
+// screen without changing its resolution (the mode change misbehaved on many desktops and under Wine/Proton)
+bool OldFullscreenToBorderless()
+{
+    char b[32];
+    ConfigString("display", "window", "native", b, sizeof b);
+    if (strcmp(b, "fullscreen") != 0) return false;
+    ConfigSet("display", "window", "borderless");
+    Log("settings: display.window fullscreen -> borderless (the Fullscreen choice is gone)");
+    return true;
+}
+
 // [display] changed (the settings page, or the file edited): applied at once, between frames
 void ApplyDisplaySettings(void* app)
 {
@@ -569,9 +581,10 @@ void ApplyDisplaySettings(void* app)
     char b[32];
     ConfigString("display", "scale", "fit", b, sizeof b);
     DisplaySetScale(strcmp(b, "integer") == 0);
+    OldFullscreenToBorderless();
     ConfigString("display", "window", "native", b, sizeof b);
     std::string want = b;
-    if (want != "normal" && want != "native" && want != "borderless" && want != "fullscreen") return;
+    if (want != "normal" && want != "native" && want != "borderless") return;
     if (want != DisplayMode()) SwitchDisplayTo(app, want, -1);
 }
 using UpdateFramesFn = void(__thiscall*)(void*);
@@ -1084,7 +1097,11 @@ void Start(HMODULE self)
                && Hook((void*)App_DoOptionsDialog, (void*)&DoOptionsDialog, (void**)&oDoOptionsDialog);
     Log(gActive ? "hooks installed" : "hooks failed: mods stay off");
     if (gActive && gScreenSaver) { Log("screensaver: this copy runs the screensaver (no mods, in a window covering the screen)"); DisplayInitScreenSaver(); }
-    else if (gActive) DisplayInit();
+    else if (gActive)
+    {
+        OldFullscreenToBorderless();
+        DisplayInit();
+    }
 }
 
 }  // namespace

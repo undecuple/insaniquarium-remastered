@@ -12,6 +12,8 @@ static const struct { const char* version; const char* lines[16]; } RemodChangel
         "Window: a large window by default again",
         "  (640x480 is still in the Display tab).",
         "Window and scaling changes apply at once.",
+        "The Fullscreen choice is gone: Borderless",
+        "  fills the screen without a mode change.",
         "The game's own Fullscreen box and Alt+Enter",
         "  switch to Borderless and back, no more",
         "  screen-mode change; leaving the game's",

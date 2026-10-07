@@ -406,10 +406,11 @@ constexpr GUID IID_IDirectDraw_ = { 0x6C14DB80, 0xA733, 0x11CE, { 0xA5, 0x21, 0x
 
 }  // namespace
 
-// [display] window: native (the default) = a large window; normal = the game's own 640x480 window; borderless; fullscreen =
-// the game's own fullscreen mode. The game reads its screen mode (registry ScreenMode: 0 windowed, 1 fullscreen) at start and
-// saves it when it closes, so the mode is written for every start, and switched once at the first frame if this start
-// came up the other way (the Steam release starts fullscreen unless told otherwise)
+// [display] window: native (the default) = a large window; normal = the game's own 640x480 window; borderless (the
+// game's own Fullscreen box and Alt+Enter give it too; its fullscreen mode is only left, never entered). The game reads
+// its screen mode (registry ScreenMode: 0 windowed, 1 fullscreen) at start and saves it when it closes, so the mode is
+// written for every start, and switched once at the first frame if this start came up the other way (the Steam release
+// starts fullscreen unless told otherwise)
 static int gScreenMode = 0;       // what this setting wants: 0 windowed, 1 fullscreen
 static int gNeedSwitch = -1;      // once: switch to windowed (1) or fullscreen (0); -1 nothing to do
 static std::string gMode;         // the window mode in use (from the settings, or the game's own Fullscreen switch)
