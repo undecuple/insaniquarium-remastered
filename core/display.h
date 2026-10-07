@@ -15,4 +15,5 @@ bool DisplayActive();                           // the native window is in use
 LPARAM DisplayMapMouse(LPARAM lp);              // window -> game coordinates for mouse messages
 const std::string& DisplayMode();              // normal, native, borderless or fullscreen
 void DisplaySetMode(const std::string& mode);   // change it while the game runs (before the game makes its new window)
+void DisplaySetScale(bool integer);             // whole multiples only (or fit), from the next frame
 void DisplayAtExit();                           // the game is closing: the chosen screen mode for the next start

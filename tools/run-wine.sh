@@ -95,6 +95,13 @@ gamewin() {
     [ "$WIDTH" -le 4096 ] && echo "$((WIDTH * HEIGHT)) $w"
   done | sort -n | tail -1 | cut -d' ' -f2
 }
+# the game's frame in a window of WIDTH x HEIGHT: sw x sh, centred ([display] scale=integer: whole multiples only)
+frame() {
+  if [ $((WIDTH * 480)) -lt $((HEIGHT * 640)) ]; then sw=$WIDTH; sh=$((WIDTH * 480 / 640)); else sh=$HEIGHT; sw=$((HEIGHT * 640 / 480)); fi
+  if grep -qi '^scale *= *integer' "$GAMEDIR/mods/remastered-mod.ini" 2>/dev/null && [ "$sw" -ge 640 ]; then
+    sw=$((sw / 640 * 640)); sh=$((sw * 480 / 640))
+  fi
+}
 [ -z "${WM:-}" ] || { $WM >/dev/null 2>&1 & sleep 1; }   # WM=/path/to/openbox: a window manager, as on a desktop
 eval "$LAUNCH" > "$T/wine.log" 2>&1 &
 wid=""
@@ -109,14 +116,13 @@ for step in "$@"; do
       case "$step" in
         click:*) IFS=: read -r _ x y <<< "$step"   # game coordinates (640x480), scaled to fit the window (centred, as
                  eval "$(xdotool getwindowgeometry --shell "$wid")"   # [display] window=native draws it)
-                 if [ $((WIDTH * 480)) -lt $((HEIGHT * 640)) ]; then sw=$WIDTH; sh=$((WIDTH * 480 / 640)); else sh=$HEIGHT; sw=$((HEIGHT * 640 / 480)); fi
-                 x=$(((WIDTH - sw) / 2 + x * sw / 640)); y=$(((HEIGHT - sh) / 2 + y * sh / 480))
+                 frame; x=$(((WIDTH - sw) / 2 + x * sw / 640)); y=$(((HEIGHT - sh) / 2 + y * sh / 480))
                  # move first: SexyApp buttons need the hover before the press
                  xdotool mousemove --window "$wid" $((x - 3)) "$y"; sleep 0.2; xdotool mousemove --window "$wid" "$x" "$y"; sleep 0.3
                  xdotool mousedown 1; sleep 0.1; xdotool mouseup 1 ;;
         move:*) IFS=: read -r _ x y <<< "$step"   # hover only (game coordinates, as click)
                 eval "$(xdotool getwindowgeometry --shell "$wid")"
-                if [ $((WIDTH * 480)) -lt $((HEIGHT * 640)) ]; then sw=$WIDTH; sh=$((WIDTH * 480 / 640)); else sh=$HEIGHT; sw=$((HEIGHT * 640 / 480)); fi
+                frame
                 xdotool mousemove --window "$wid" $(((WIDTH - sw) / 2 + x * sw / 640)) $(((HEIGHT - sh) / 2 + y * sh / 480)) ;;
         key:*) xdotool key --window "$wid" "${step#key:}" ;;
         type:*) xdotool type --window "$wid" "${step#type:}" ;;
@@ -124,7 +130,7 @@ for step in "$@"; do
     focus) wid=$(gamewin); xdotool windowfocus "$wid" 2>/dev/null || true ;;
     info) for w in $(xdotool search --name "Insaniquarium"); do echo "window $w: $(xdotool getwindowname $w) $(xdotool getwindowgeometry $w | tr '\n' ' ')"; done ;;
     sh:*) bash -c "${step#sh:}" ;;
-    shot:*) import -window root "${step#shot:}"; echo "shot ${step#shot:}" ;;
+    shot:*) if [ -n "${SHOTCMD:-}" ]; then $SHOTCMD "${step#shot:}"; else import -window root "${step#shot:}"; fi; echo "shot ${step#shot:}" ;;
   esac
 done
 eval "$KILL"
@@ -132,8 +138,9 @@ eval "$KILL"
 sleep 1; pkill -f "$(basename "$T").game.Insaniquarium\.ex[e]" 2>/dev/null || true
 EOF
 SCREEN=${SCREEN:-800x600x24}   # the game runs windowed (see WINDOWED), so it isn't scaled
-if [ -n "${REALDISPLAY:-}" ]; then   # REALDISPLAY=:0: on your own screen instead of a hidden one (the window shows and takes focus)
-  GAMEDIR="$T/game" T="$T" DISPLAY="$REALDISPLAY" bash "$T/steps.sh" "$@" || true
+if [ -n "${REALDISPLAY:-}" ]; then   # REALDISPLAY=:0: on your own screen instead of a hidden one (the window shows and takes focus;
+  # on a Wayland desktop, shots need SHOTCMD=/path/to/grim: import can't capture it)
+  GAMEDIR="$T/game" T="$T" SHOTCMD="${SHOTCMD:-}" DISPLAY="$REALDISPLAY" bash "$T/steps.sh" "$@" || true
 else
   GAMEDIR="$T/game" T="$T" xvfb-run -a -s "-screen 0 $SCREEN" bash "$T/steps.sh" "$@" || true
 fi

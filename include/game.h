@@ -149,6 +149,7 @@ constexpr uintptr_t App_DoOptionsDialog = 0x0054c620;    // void (WinFishApp*, b
 constexpr int App_mCursorImages = 0x3b4;  // Image*[]: the custom cursors by number (0 pointer, 1 hand, 2 dragging, 3 text); NULL = Windows' own (EnforceCursor @00486010)
 constexpr int App_mCursorNum = 0x4b0;     // int: the cursor the game wants now
 constexpr int App_mMouseIn = 0x4cc;       // bool: the pointer is over the game's 640x480 client area (from GetCursorPos, on a timer)
+constexpr int App_mHWnd = 0x350;       // HWND: the game's window (a new one after every screen-mode switch)
 constexpr int App_mIsWindowed = 0x343;  // bool: windowed (not fullscreen); set from the registry's ScreenMode == 0 (ReadFromRegistry @0047eda0)
 constexpr int App_mIsScreenSaver = 0x358; // bool
 constexpr int App_mDeferredCount = 0x364; // uint: queued window messages (std::list<MSG> mDeferredMessages, head at +0x360)

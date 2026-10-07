@@ -137,10 +137,14 @@ BOOL WINAPI GameGetCursorPos(POINT* p)
     if (!ok || !p || !gOn || !gWindowDone || !gWnd || gScale <= 0) return ok;
     POINT c = *p;
     ScreenToClient(gWnd, &c);
-    if (c.x < gTarget.left || c.y < gTarget.top || c.x >= gTarget.right || c.y >= gTarget.bottom) return ok;   // on a bar or outside
+    RECT client;
+    GetClientRect(gWnd, &client);
+    if (!PtInRect(&client, c)) return ok;   // outside the window
+    // on the frame, or on a bar: the nearest point of the frame, as DisplayMapMouse does for mouse messages (a bar seen
+    // as outside here but inside there made the game flip between its cursor and Windows' on every frame)
     POINT g{ (LONG)((c.x - gTarget.left) / gScale), (LONG)((c.y - gTarget.top) / gScale) };
-    if (g.x > GameW - 1) g.x = GameW - 1;
-    if (g.y > GameH - 1) g.y = GameH - 1;
+    g.x = g.x < 0 ? 0 : g.x > GameW - 1 ? GameW - 1 : g.x;
+    g.y = g.y < 0 ? 0 : g.y > GameH - 1 ? GameH - 1 : g.y;
     ClientToScreen(gWnd, &g);
     *p = g;
     return ok;
@@ -308,6 +312,12 @@ HRESULT BltCommon(int v, void* self, RECT* dst, void* src, RECT* srcRect, DWORD 
 {
     BltFn blt = gOrigBlt[v];
     if (self == gPrimary[v] && src && !(flags & DDBLT_COLORFILL)) { gFrame = src; gFrameVersion = v; }   // the game's frame, for screenshots
+    // the game's window as it is now: a screen-mode switch makes a new one and draws into it before the core has seen it
+    if (void* app = CoreApp())
+    {
+        HWND w = game::at<HWND>(app, game::App_mHWnd);
+        if (w && w != gWnd) { gWnd = w; gWindowDone = false; gPlacedAt = 0; }
+    }
     if (self != gPrimary[v] || !gOn || !gWnd || !dst || !src) return blt(self, dst, src, srcRect, flags, fx);
     // switched to fullscreen in the game's options: leave it alone, and redo the window when it comes back windowed
     if (!CoreGameWindowed()) { gWindowDone = false; TakeGameCursors(false); return blt(self, dst, src, srcRect, flags, fx); }
@@ -319,7 +329,13 @@ HRESULT BltCommon(int v, void* self, RECT* dst, void* src, RECT* srcRect, DWORD 
     {
         RECT got;
         GetWindowRect(gWnd, &got);
-        if ((got.left != gWantRect.left || got.top != gWantRect.top) && gPlaceTries < 5)
+        // resized as well as moved: a tiling window manager (niri, sway...) placed it, and it stays where it's put
+        if (got.right - got.left != gWantRect.right - gWantRect.left || got.bottom - got.top != gWantRect.bottom - gWantRect.top)
+        {
+            CoreLog("native window: the desktop placed it at %ld,%ld %ldx%ld (left there)", got.left, got.top, got.right - got.left, got.bottom - got.top);
+            gPlacedAt = 0;
+        }
+        else if ((got.left != gWantRect.left || got.top != gWantRect.top) && gPlaceTries < 5)
         {
             gPlaceTries++;
             CoreLog("native window: moved to %ld,%ld: putting it back at %ld,%ld", got.left, got.top, gWantRect.left, gWantRect.top);
@@ -436,11 +452,32 @@ void DisplayInit()
 
 // the game's own Fullscreen switch (core.cpp) changed the mode: the game makes a new window, sized at its first frame
 const std::string& DisplayMode() { return gMode; }
+void DisplaySetScale(bool integer) { gInteger = integer; }   // Layout() picks it up at the next frame
 void DisplaySetMode(const std::string& mode)
 {
+    bool was = gOn && gWindowDone;
     ApplyMode(mode);
     gWindowDone = false;
-    if (!gOn) TakeGameCursors(false);   // the game draws its own cursor again
+    gPlacedAt = 0;
+    if (!gOn)
+    {
+        TakeGameCursors(false);   // the game draws its own cursor again
+        // the game's own 640x480 window again (its style and place, as SexyAppBase::MakeWindow makes it)
+        if (was && gWnd && IsWindow(gWnd))
+        {
+            DWORD style = WS_CLIPCHILDREN | WS_POPUP | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
+            RECT r{ 0, 0, GameW, GameH };
+            AdjustWindowRect(&r, style, FALSE);
+            int w = r.right - r.left, h = r.bottom - r.top;
+            MONITORINFO mi{ sizeof mi };
+            GetMonitorInfoA(MonitorFromWindow(gWnd, MONITOR_DEFAULTTONEAREST), &mi);
+            const RECT& wa = mi.rcWork;
+            SetWindowLongA(gWnd, GWL_STYLE, style);
+            SetWindowPos(gWnd, HWND_TOP, wa.left + (wa.right - wa.left - w) / 2, wa.top + (int)((wa.bottom - wa.top - h) * 0.382),
+                         w, h, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+            CoreLog("native window: back to the game's own 640x480 window");
+        }
+    }
     SetScreenModeForNextStart(nullptr);
 }
 

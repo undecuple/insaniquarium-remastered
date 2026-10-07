@@ -50,9 +50,9 @@ static void Build()
 {
     tabs[0] = {
         { "Window", "display", "window", "Large: as big as the screen allows (whole multiples of 640x480), resizable. 640x480: the game's own window. Borderless: fills the screen, black bars at the sides. Fullscreen: the game's own fullscreen mode (changes the screen's resolution; Borderless is usually better).",
-          { { "Large", "native" }, { "640x480", "normal" }, { "Borderless", "borderless" }, { "Fullscreen", "fullscreen" } }, "native", true },
+          { { "Large", "native" }, { "640x480", "normal" }, { "Borderless", "borderless" }, { "Fullscreen", "fullscreen" } }, "native", false },
         { "Scaling", "display", "scale", "Fit: as large as the screen allows. Whole multiples: 2x, 3x... only (sharpest pixels, wider bars).",
-          { { "Fit", "fit" }, { "Whole multiples", "integer" } }, "fit", true },
+          { { "Fit", "fit" }, { "Whole multiples", "integer" } }, "fit", false },
         { "Frame counter", "fps", "shown", "Frames per second in the top-left corner (F3 shows or hides it).", {}, "0", false },
     };
     tabs[1] = {

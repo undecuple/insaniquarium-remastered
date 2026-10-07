@@ -520,9 +520,60 @@ void MarkAllDirty(void* wm)
 }
 
 // every update tick, before the game's own: the native window's switch from fullscreen (between frames, not while drawing)
-bool gOwnSwitch;   // the core's own start-up switch (DisplayNeedsSwitch): not the player's
+bool gOwnSwitch;   // the core's own switches (start-up, settings): not the player's
 bool gAltEnter;    // Alt+Enter was just pressed (WndProc): the game's next switch toggles
+void PlayerFullscreen(void* app, bool wantFull, int is3d);
 void EnsureWindowHooked();
+using SwitchScreenModeFn = void(__thiscall*)(void*, bool, bool, bool);
+SwitchScreenModeFn oSwitchScreenMode;
+
+// to another window mode while the game runs. Between windows (640x480, large, borderless: the game stays windowed)
+// the same window is restyled, so nothing is destroyed; the game's own fullscreen goes through the game's switch (a new
+// window, sized by the display wrapper at its first frame). is3d: the Options' 3D box, or -1 for the game's current
+void SwitchDisplayTo(void* app, const std::string& next, int is3d)
+{
+    std::string mode = DisplayMode();
+    if (next == mode) return;
+    Log("display: %s -> %s", mode.c_str(), next.c_str());
+    DisplaySetMode(next);
+    if (next != "fullscreen" && mode != "fullscreen") return;
+    bool windowed = next != "fullscreen";
+    gOwnSwitch = true;
+    if (is3d < 0) reinterpret_cast<void(__thiscall*)(void*, bool)>((*reinterpret_cast<void***>(app))[App_vSwitchScreenMode / 4])(app, windowed);
+    else oSwitchScreenMode(app, windowed, is3d != 0, false);
+    gOwnSwitch = false;
+    EnsureWindowHooked();
+}
+
+// the player's fullscreen switch (the Options' box, Alt+Enter): on, a borderless window covering the screen instead of
+// the game's screen-mode change (which misbehaves on many desktops and under Wine/Proton); off, the window mode in use
+// before ([display] last_window). The choice is saved in [display] window, as the settings page would.
+void PlayerFullscreen(void* app, bool wantFull, int is3d)
+{
+    std::string mode = DisplayMode();
+    if (wantFull == (mode == "borderless" || mode == "fullscreen")) return;
+    char last[32];
+    ConfigString("display", "last_window", "native", last, sizeof last);
+    std::string next = wantFull ? "borderless" : (strcmp(last, "normal") == 0 ? "normal" : "native");
+    if (wantFull) ConfigSet("display", "last_window", mode.c_str());
+    ConfigSet("display", "window", next.c_str());
+    Log("display: the game's Fullscreen switch");
+    SwitchDisplayTo(app, next, is3d);
+}
+
+// [display] changed (the settings page, or the file edited): applied at once, between frames
+void ApplyDisplaySettings(void* app)
+{
+    static int tick;
+    if (++tick % 20) return;
+    char b[32];
+    ConfigString("display", "scale", "fit", b, sizeof b);
+    DisplaySetScale(strcmp(b, "integer") == 0);
+    ConfigString("display", "window", "native", b, sizeof b);
+    std::string want = b;
+    if (want != "normal" && want != "native" && want != "borderless" && want != "fullscreen") return;
+    if (want != DisplayMode()) SwitchDisplayTo(app, want, -1);
+}
 using UpdateFramesFn = void(__thiscall*)(void*);
 UpdateFramesFn oUpdateFrames;
 void __fastcall UpdateFrames(void* app, void*)
@@ -535,32 +586,20 @@ void __fastcall UpdateFrames(void* app, void*)
         reinterpret_cast<void(__thiscall*)(void*, bool)>((*reinterpret_cast<void***>(app))[App_vSwitchScreenMode / 4])(app, sw == 1);
         gOwnSwitch = false;
     }
+    else if (!gScreenSaver) ApplyDisplaySettings(app);
     oUpdateFrames(app);
 }
 
-// the game's own Fullscreen switch (the Options' box, Alt+Enter): on, a borderless window covering the screen instead of
-// the game's screen-mode change (which misbehaves on many desktops and under Wine/Proton); off, the window mode in use
-// before ([display] last_window). The choice is saved in [display] window, as the settings page would.
-using SwitchScreenModeFn = void(__thiscall*)(void*, bool, bool, bool);
-SwitchScreenModeFn oSwitchScreenMode;
+// the game's own Fullscreen switch (the Options' box, Alt+Enter), from wherever the game calls it
 void __fastcall SwitchScreenMode(void* app, void*, bool wantWindowed, bool is3d, bool force)
 {
     std::string mode = DisplayMode();
     if (gOwnSwitch) { oSwitchScreenMode(app, wantWindowed, is3d, force); EnsureWindowHooked(); return; }
     bool full = mode == "borderless" || mode == "fullscreen";
-    bool altEnter = gAltEnter;
+    bool wantFull = gAltEnter ? !full : !wantWindowed;
     gAltEnter = false;
-    bool wantFull = altEnter ? !full : !wantWindowed;
-    if (wantFull == full) { oSwitchScreenMode(app, mode != "fullscreen", is3d, false); EnsureWindowHooked(); return; }   // only the 3D box changed
-    char last[32];
-    ConfigString("display", "last_window", "native", last, sizeof last);
-    std::string next = wantFull ? "borderless" : (strcmp(last, "normal") == 0 ? "normal" : "native");
-    if (wantFull) ConfigSet("display", "last_window", mode.c_str());
-    ConfigSet("display", "window", next.c_str());
-    Log("display: the game's Fullscreen switch: %s -> %s", mode.c_str(), next.c_str());
-    DisplaySetMode(next);
-    oSwitchScreenMode(app, true, is3d, true);   // a new window, which the display wrapper sizes at its first frame
-    EnsureWindowHooked();
+    PlayerFullscreen(app, wantFull, is3d);
+    if (mode != "fullscreen") oSwitchScreenMode(app, true, is3d, false);   // the 3D box, if it changed
 }
 
 // the Options dialog: its Fullscreen box shows the borderless window as fullscreen (the game itself stays windowed)
@@ -640,14 +679,25 @@ LRESULT CALLBACK WndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
         gToastUntil = GetTickCount() + 1500;
     }
     if (msg == WM_ENTERSIZEMOVE) DisplayPlayerMovesWindow();
-    // Alt+Enter, which the game answers with SwitchScreenMode(!windowed): a toggle for the hook below. Held down, once a
-    // second (its "previous state" bit can't tell: the key-up went to the window the last switch destroyed)
-    static DWORD lastAltEnter;
+    // Alt+Enter, which the game answers with SwitchScreenMode(!windowed): a toggle for the hook below. Auto-repeats (the
+    // "previous state" bit) go to neither: held down it would switch on every repeat, and under Wine a window that was
+    // just restyled can get a stream of them with no key pressed. But Wine can also lose Enter's key-up in a switch, so
+    // the next real press looks like a repeat: one after a pause whose key-up follows with no repeats between counts
+    static DWORD lastReturnDown;
+    static bool maybePress;
     if (msg == WM_SYSKEYDOWN && wp == VK_RETURN)
     {
-        if (GetTickCount() - lastAltEnter < 1000) return 0;
-        lastAltEnter = GetTickCount();
+        DWORD now = GetTickCount();
+        bool repeat = (lp & (1 << 30)) != 0;
+        maybePress = repeat && now - lastReturnDown > 400;
+        lastReturnDown = now;
+        if (repeat) return 0;
         gAltEnter = true;
+    }
+    if ((msg == WM_SYSKEYUP || msg == WM_KEYUP) && wp == VK_RETURN && maybePress)
+    {
+        maybePress = false;
+        if (void* a = App()) PlayerFullscreen(a, DisplayMode() != "borderless" && DisplayMode() != "fullscreen", -1);
     }
     bool down = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN, up = msg == WM_KEYUP || msg == WM_SYSKEYUP;
     // a key a mod took is the mod's: its auto-repeats and the characters it types (Space's ' ') don't reach the game
@@ -984,7 +1034,7 @@ HWND gHookedWnd;
 void EnsureWindowHooked()
 {
     if (!App()) return;
-    HWND wnd = at<HWND>(App(), 0x350);   // SexyAppBase::mHWnd (SetTimer(this->f_350, ...))
+    HWND wnd = at<HWND>(App(), App_mHWnd);
     if (!wnd || wnd == gHookedWnd) return;
     gHookedWnd = wnd;
     DisplaySetWindow(wnd);
