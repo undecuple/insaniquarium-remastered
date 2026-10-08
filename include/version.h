@@ -2,12 +2,17 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.2.2"
+#define REMOD_VERSION "0.2.3"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.2.3", {
+        "Windows: install-steam.bat now works in the",
+        "  default Steam folder (Program Files (x86)):",
+        "  it closed at once without installing.",
+        nullptr } },
     { "0.2.2", {
         "Window: a large window by default again",
         "  (640x480 is still in the Display tab).",

@@ -132,6 +132,7 @@ The save backup (`userdata-before-remastered-mod`) can be deleted once you're ha
 | What happens | What to do |
 |---|---|
 | The title screen says the loader doesn't match the mods | The installer wasn't run after an update: close the game and run `install-steam.bat` / `install-steam.sh` again. |
+| `install-steam.bat` flashes up and closes without a message | Version 0.2.2 and older, in a folder with brackets in its path (the default `Program Files (x86)`): use the latest download. Or copy `ddraw.dll` by hand into `C:\ProgramData\PopCap Games\Insaniquarium` (that is all the helper does). |
 | An installer says Insaniquarium is running | Close the game (and its screensaver), then run it again. |
 | No "Remastered Mod is on" message, no `mods/remastered-mod.log` | The loader isn't used. Windows: did `install-steam.bat` say *installed*? Linux: run the script again, or set the launch option / DLL override. |
 | The log says "not the Insaniquarium Deluxe 1.1 game these mods are for" | A different version of the game: the mod stays off on purpose. |

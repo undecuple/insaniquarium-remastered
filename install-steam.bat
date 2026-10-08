@@ -5,6 +5,8 @@ rem ddraw.dll, mods\ and this file there. The Steam Insaniquarium.exe is a launc
 rem %ProgramData%\PopCap Games\Insaniquarium\popcapgame1.exe, so the loader has to be next to that file.
 rem   install-steam.bat            install
 rem   install-steam.bat uninstall  remove the loader and the mod's files again (your settings stay)
+rem Inside ( ) blocks, paths from %~dp0 are quoted: the default Steam folder is under "Program Files (x86)", and an
+rem unquoted ")" there ends the block, so cmd stops with a syntax error before anything runs.
 set "LOADER=%ProgramData%\PopCap Games\Insaniquarium"
 rem files in use: replacing them under a running game can crash it
 tasklist /fi "imagename eq popcapgame1.exe" 2>nul | find /i "popcapgame1.exe" >nul && ( echo Insaniquarium is running: close it first, then run this again. & goto :done )
@@ -14,7 +16,7 @@ if /i "%~1"=="uninstall" (
   if exist "%~dp0mods\remod-files.txt" for /f "usebackq tokens=* delims=" %%f in ("%~dp0mods\remod-files.txt") do call :remove "%%f"
   del "%~dp0mods\remod-files.txt" "%~dp0mods\remod-files.installed" 2>nul
   rd "%~dp0mods\coop" 2>nul
-  echo Insaniquarium - Remastered Mod removed: the loader from %LOADER%, its files from %~dp0mods
+  echo Insaniquarium - Remastered Mod removed: the loader from %LOADER%, its files from "%~dp0mods"
   echo ^(kept mods\remastered-mod.ini and the log; delete the mods folder to remove them too^). Delete ddraw.dll here too.
   goto :done
 )
