@@ -73,6 +73,13 @@ constexpr uintptr_t GameObject_SetHungryFlash = 0x004d6920; // void (GameObject*
 constexpr uintptr_t Coin_MouseDown = 0x004e5450;           // void (Coin*, int x, int y, int clicks): the player picks it up
 constexpr uintptr_t Coin_Update = 0x004f5050;              // void (Coin*): falls 1.5 px a tick (0.8 in some cases)
 constexpr uintptr_t Board_PlaySample = 0x00538230;         // void (Board*, int resourceId, int minDelay, double volume)
+constexpr uintptr_t GetResourceById = 0x005016a0;          // int __cdecl (int resourceId): the sound number of a SOUND_ resource
+constexpr int App_mSoundManager = 0x4b4;                   // SoundManager* (SexyAppBase): vtable 0x20 GetSoundInstance(num),
+constexpr int SoundManager_vGetSoundInstance = 0x20;       //   its SoundInstance: vtable 0x1c Play(bool looping, bool autoRelease)
+constexpr int SoundInstance_vPlay = 0x1c;
+constexpr uintptr_t FONT_TINYBOLD = 0x005e8aa4;            // Font** (resource globals; the tooltip's font)
+constexpr uintptr_t FONT_LIDDIE12 = 0x005e8dac;            // the edit box's font
+constexpr uintptr_t FONT_CONTINUUMBOLD14 = 0x005e8b04;     // the in-tank message line (over its OUTLINE twin)
 constexpr uintptr_t Board_SpendMoney = 0x00540b30;         // bool (Board*, int amount, bool loud): false (and a buzz) when broke
 constexpr uintptr_t Board_DropFood = 0x00543280;           // void (Board*, int x, int y, int drift, bool silent, int extra, int quality)
 constexpr uintptr_t Board_AddTextCoin = 0x005444e0;        // Coin* (Board*, int x, int y, int style, const string& text): floating text
@@ -190,6 +197,11 @@ constexpr int Widget_vResize = 0xa0;    // vtable: void Resize(int x, int y, int
 constexpr int Image_mWidth = 0x24, Image_mHeight = 0x28;
 constexpr int Profile_mShells = 0x48;   // int
 constexpr int Board_mPaused  = 0x94;    // bool
+// the tank's message line (Board::ShowText @0053e950 fills it; MessageWidget, drawn at y 445 in FONT_CONTINUUMBOLD14)
+constexpr int Board_mMessageWidget = 0x118;   // MessageWidget* (null while the board isn't in the widget manager)
+constexpr int Message_mText = 0x8c, Message_mColor = 0xa8, Message_mOutline = 0xb8;   // std::string; Color (4 ints) x2
+constexpr int Message_mTimer = 0xd0, Message_mBlink = 0xd4, Message_mId = 0xd8;       // ticks left; bool; int (-1: any)
+constexpr uintptr_t String_Assign = 0x00422210;   // std::string& __thiscall assign(const std::string&, size_t off, size_t n)
 constexpr int Board_mGuppies = 0xa0;    // ObjVec*: the board's object lists (vector of GameObject*), see ObjVec
 constexpr int Board_mOscars  = 0xa4;
 constexpr int Board_mCoins   = 0xa8;

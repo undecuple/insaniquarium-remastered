@@ -1,220 +1,112 @@
 # Insaniquarium - Remastered Mod
 
-**Mods for the original *Insaniquarium! Deluxe* on Steam.** Insaniquarium - Remastered Mod adds new features to the
-game you already own: online co-op for 2-4 players, extra modes, achievements, a large sharp window and more.
-Drop a few files into the game folder and play as usual. It never changes the game's own files, and removing it is
-deleting what you added.
+<!-- badges: shown on GitHub only (tools/package.sh leaves this block out of README.txt) -->
+[![Build](https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml/badge.svg)](https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml)
+[![Latest release](https://img.shields.io/github/v/release/undecuple/insaniquarium-remastered)](https://github.com/undecuple/insaniquarium-remastered/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE.txt)
+![Game: Steam 1.1](https://img.shields.io/badge/game-Steam%201.1-1b2838)
+![Platform: Windows, Linux (Proton)](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(Proton)-0078D6)
+[![Ko-fi](https://img.shields.io/badge/support-Ko--fi-FF5E5B)](https://ko-fi.com/P5P615QPPM)
+
+**[Download](https://github.com/undecuple/insaniquarium-remastered/releases/latest)** · **[Install](docs/INSTALL.md)** · **[Status](#status)** ·
+**[Roadmap](docs/ROADMAP.md)** · **[Developing](DEVELOPING.md)** · **[Contributing](CONTRIBUTING.md)**
+<!-- /badges -->
+
+**Mods for the original *Insaniquarium! Deluxe* on Steam:** online co-op for 2-4 players, extra modes, achievements,
+mutators, a large sharp window and more, in the game you already own. Drop a few files into the game folder and play
+as usual. It never changes the game's own files, and removing it is deleting what you added.
 
 Unofficial fan project, not affiliated with PopCap Games or EA. No game files are included: you need your own copy.
+
+## Status
+| | |
+|---|---|
+| Steam release on Linux / Steam Deck (Proton) | works: tested with Proton-GE and with the Steam client's own Proton |
+| Windows 10/11 | built for it, not yet tested on a real Windows PC: reports are welcome |
+| Online co-op (the public server) | works, 2-4 players (tested with four games at once) |
+| Co-op over Steam | works; not yet tested between two Steam accounts |
+| Game updates | if Steam updates the game, the mod stays off (the game runs as normal) until the mod is updated |
+
+What's done and planned: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Screenshots
 | | |
 |---|---|
-| ![The Remastered page on the main menu](docs/images/remastered-page.png) **The Remastered page:** the mod's screens, from the main menu | ![Online co-op: the game list](docs/images/coop-online.png) **Online co-op:** host or join through the public server, no setup |
-| ![Co-op in a tank](docs/images/coop-ingame.png) **In a co-op game:** every player's pointer, name and avatar | ![Co-op server settings](docs/images/coop-server.png) **Server settings:** the public server, or your own, with a connection test |
-| ![Extra Modes](docs/images/extra-modes.png) **Extra Modes:** daily challenge, boss rush, endless, sandbox, play as the alien | ![Play as the Alien](docs/images/play-as-alien.png) **Play as the Alien:** you steer the alien, a computer keeper fights back |
-| ![Mutators](docs/images/mutators.png) **15 mutators** to change the rules | ![Achievements](docs/images/achievements.png) **31 achievements** with shell rewards |
-| ![The Mods page](docs/images/mods-page.png) **The Mods page:** every mod, on/off, and its own screen | ![The co-op lobby](docs/images/coop-lobby.png) **The co-op lobby:** players with their avatars, roles, versus, split money |
-| ![The Keys tab](docs/images/keys-page.png) **The Keys tab:** every key, changed with a click, defaults with a right-click | |
+| ![The Remastered page](docs/images/remastered-page.png) **The Remastered page** on the main menu: every mod screen | ![Online co-op](docs/images/coop-online.png) **Online co-op:** Public Match, Private Match, or join from the list |
+| ![The co-op lobby](docs/images/coop-lobby.png) **The lobby:** avatars, roles, versus, split money | ![Four players in a tank](docs/images/coop-ingame.png) **Four players** in one tank, each with a named pointer |
+| ![Extra Modes](docs/images/extra-modes.png) **Extra Modes:** Daily Challenge, Boss Rush, Endless, Sandbox, Play as Alien | ![Play as Alien](docs/images/play-as-alien.png) **Play as Alien:** steer the alien against a computer keeper |
+| ![Mutators](docs/images/mutators.png) **15 mutators** that change the rules | ![Achievements](docs/images/achievements.png) **31 achievements** with shell rewards |
+| ![The Keys tab](docs/images/keys-page.png) **Every key** can be changed | ![Records](docs/images/records.png) **Records:** your bests and Hall of Fame tables |
 
-## Requirements
-- ***Insaniquarium! Deluxe* from Steam** ([store page](https://store.steampowered.com/app/3320/)), installed and run
-  once. The mod checks the game's code when it starts; with any other build it stays off and the game runs as normal.
-- Windows 10/11, or Linux / Steam Deck through Proton.
-- Online co-op: an internet connection (the mod's public server is set up by default; nothing to configure).
+## Installing
+You need ***Insaniquarium! Deluxe* from Steam** ([store page](https://store.steampowered.com/app/3320/)), installed
+and run once, on Windows 10/11 or Linux / Steam Deck (Proton).
 
-## Where the files go
-| File (from the release zip) | Where it goes |
-|---|---|
-| `mods\` (all the mods and the default settings) | the game folder: Steam → right-click *Insaniquarium! Deluxe* → **Manage → Browse local files** (usually `C:\Program Files (x86)\Steam\steamapps\common\Insaniquarium Deluxe`) |
-| `ddraw.dll` (the loader) | the same game folder, **and** the folder the Steam version actually runs the game from: `C:\ProgramData\PopCap Games\Insaniquarium`. `install-steam.bat` (Windows) or `install-steam.sh` (Linux / Steam Deck, into the game's Proton prefix) puts it there for you |
-| your own or downloaded mods | `mods\<name>.dll` in the game folder (only `.dll` files directly in `mods\` are loaded) |
-| content packs (images, sounds, levels) | a folder inside `mods\` (see [DEVELOPING.md](DEVELOPING.md#content-packs)) |
+1. **[Download](https://github.com/undecuple/insaniquarium-remastered/releases/latest)** the zip and unpack it.
+2. **Windows:** copy `ddraw.dll`, `install-steam.bat` and the `mods` folder into the game folder (Steam → right-click
+   the game → **Manage → Browse local files**) and double-click `install-steam.bat`.
+   **Linux / Steam Deck:** run `bash install-steam.sh` in the unpacked folder.
+3. Play from Steam as usual. The title screen says "Insaniquarium - Remastered Mod is on".
 
-Step by step for Windows, Linux and Steam Deck: **[docs/INSTALL.md](docs/INSTALL.md)**. The title screen then says
-"Insaniquarium - Remastered Mod is on".
-
-## Documentation
-| | |
-|---|---|
-| [docs/INSTALL.md](docs/INSTALL.md) | installing, updating and uninstalling (Windows, Linux, Steam Deck) |
-| [DEVELOPING.md](DEVELOPING.md) | building from source, and **making your own mods** (the API, hooking game functions, testing, co-op rules) |
-| [docs/MOD-MANAGER.md](docs/MOD-MANAGER.md) | how a mod shows up on the **Mods** page (description, on/off, Open button) and the Remastered page |
-| [docs/SERVER.md](docs/SERVER.md) | **hosting your own co-op server** (Docker: Nakama + Postgres, HTTPS) and pointing the game at it |
-| [docs/STEAM.md](docs/STEAM.md) | how the Steam release runs the game, and co-op over Steam |
-| [docs/GAME-UPDATES.md](docs/GAME-UPDATES.md) | which game functions each mod uses, and what to do if the game is ever updated |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | what's done and what's planned |
-| [examples/](examples/) | a minimal mod and a template to start from |
+Step by step, updating and uninstalling: **[docs/INSTALL.md](docs/INSTALL.md)** (`INSTALL.txt` in the download).
+The mod checks the game's code when it starts: with any other version of the game it stays off and the game runs as
+normal ([docs/GAME-UPDATES.md](docs/GAME-UPDATES.md)).
 
 ## Features
-| Mod | What it does | Keys |
-|---|---|---|
-| **settings** | The settings page (every option below, with tabs; every key on the **Keys** tab), the main menu's **Remastered** page, the loaded-mods screen (switch mods off or on, restart the game) | **F2** |
-| **hovercoins** | Coins, gems and treasure are collected when the pointer passes over them, no clicking needed | none |
-| **extramodes** | **Extra Modes** on the Remastered page: a **Daily Challenge** (the same tank and two mutators for everyone that day), **Boss Rush** (every alien in turn, tougher each time), **Endless** (waves that never stop), and **Records** with Hall of Fame tables | none |
-| **sandbox** | The game's hidden sandbox as a proper mode (from Extra Modes): a palette places fish, aliens and pets where you click; remove, clear, backdrops, hunger off, three save slots | **Tab** palette |
-| **alienplay** | **Play as the Alien** (from Extra Modes): 20 stages where you steer the alien and eat the fish while a computer keeper shoots back | click to dash |
-| **content** | Content packs: a folder in `mods\` can replace the game's images, sounds and music (the game's files are never changed) and change what levels start with (`content\levels.json`). See DEVELOPING.md | none |
-| **autosave** | Saves the level in progress and your profile every 2 minutes and whenever the game pauses (window loses focus, menu opens), so a crash or power cut loses little | none |
-| **continues** | When all your fish die, spend shells to get two guppies and keep going: 500 shells, then 1,000, 1,500... until you return to the main menu. Only offered when you have the shells | none |
-| **accessibility** | A red **!** over hungry fish, and each coin's value under it (no need to tell silver, gold and gems apart by colour) | none |
-| **achievements** | 31 achievements (coins, aliens, levels, pets, modes...) with shell rewards paid on the main menu; a banner when one unlocks; the list from **Achievements** on the Remastered page. Progress is saved per profile next to your saves | **F4** list |
-| **coop** | Co-op for 2-4 players over the network: **Co-op** on the Remastered page (or F7), one player hosts and the others join: **Online** through the mod's public server (a listed game, or a private one joined by its room code; no ports to open, nothing to set up), through **Steam**, by address, or through **your own server** (docs/SERVER.md). Everyone plays the host's profile (your own saves are never touched; shells you earn come home with you). Roles (Feeder, Gunner, Collector, Shopper), chat (Enter, in the game and the lobby; lines fade after 10 s), pings (middle click), rescue a starving fish together, tougher tanks for more players (host's choice), an avatar on your pointer (a pet or fish portrait), **split money** (host's choice: everyone has their own money; coins pay whoever clicked them), join a game that has already started (while there's room), and **Versus** (host's choice: the first player to join steers the aliens with the pointer, click to dash, and tries to eat every fish). The host is in charge: only the host pauses, changes the speed, opens the menu or answers dialogs. Everyone needs the same mods | **F7**, Enter, middle click |
-| **mutators** | 15 optional rule changes for Adventure, Time Trial and Challenge, switched on one by one in the settings: hungry fish, double trouble (aliens come in twins), glass cannon, no pets, pacifist, heavy coins, tiny wallet ($2,500 cap), rich start ($1,000), hard mode, golden guppies, coin combos, tank events (feeding frenzy, lights out, currents), overeating, decay (corpses float until clicked away), gadgets (buy an auto-feeder, coin magnet and alien alarm) | none |
-| **fps** | A frame counter in the top-left corner | **F3** |
-| **screenshot** | Saves the game window as a PNG in the game folder's `screenshots` folder | **F12** |
-| **timecontrol** | Pause the game, or play at 0.75x or 2x speed. A small label in the corner shows the speed. Works in every mode that has a tank (Adventure, Time Trial, Challenge, Virtual Tank); menus always run at normal speed. In co-op only the host can change it, for everyone | **F5** pause / resume, **F6** 0.75x (again: normal), **F8** 2x (again: normal) |
-| **screensaver** | Watch your Virtual Tank as the game's own screensaver: **Open** on the Mods page, or **F11** on the main menu. It fills the screen in a window (no screen-mode switch, which fails on some Linux desktops) while the game waits minimised, and the game comes back when you move the mouse or press a key. On Linux and the Steam Deck it runs inside the game's own Proton prefix, so it finds your saves | **F11** |
+Open everything from the **Remastered** button on the main menu (bottom left), or with the keys below.
 
-**The Remastered page:** the **Remastered** button on the main menu (bottom left) turns the menu's button panel into
-the mod's: **Co-op**, **Extra Modes**, **Achievements**, **Mod Settings**, **About**, **Mods** (the loaded mods,
-switch them off or on) and **Records**; **Main Menu** goes back. The settings page also opens with **F2** anywhere.
+| Mod | What it does |
+|---|---|
+| **coop** | Co-op for 2-4 players: online with no setup, over Steam, or by address (see below) |
+| **extramodes** | **Daily Challenge** (the same tank and mutators for everyone that day), **Boss Rush**, **Endless**, and **Records** |
+| **alienplay** | **Play as Alien:** 20 stages where you steer the alien while a computer keeper shoots back |
+| **sandbox** | The game's hidden sandbox as a mode: place fish, aliens and pets, backdrops, three save slots |
+| **mutators** | 15 optional rule changes (hungry fish, double trouble, glass cannon, tiny wallet, tank events...) |
+| **achievements** | 31 achievements with shell rewards, a banner when one unlocks, progress saved per profile |
+| **hovercoins** | Coins are collected when the pointer passes over them |
+| **autosave** | Saves the level and your profile every 2 minutes and whenever the game pauses |
+| **continues** | When all your fish die, spend shells (500, then 1,000...) for two guppies and keep going |
+| **accessibility** | A red **!** over hungry fish, and each coin's value under it (off at first: the Gameplay tab) |
+| **timecontrol** | Pause, or play at 0.75x or 2x, in any tank |
+| **screenshot**, **fps** | A screenshot key (PNG in the game folder's `screenshots` folder) and a frame counter |
+| **screensaver** | Your Virtual Tank as the game's own screensaver, from the main menu |
+| **content** | Content packs: replace the game's images, sounds and music, or change its levels ([DEVELOPING.md](DEVELOPING.md#content-packs)) |
+| **settings** | The settings page, the Remastered page and the Mods page (switch mods off or on) |
 
-### Keys
-Every key can be changed on the settings page's **Keys** tab: click a key and press the new one (**Esc** keeps the old
-one, **Backspace** means no key). **Right-click** a key, or **Reset all keys**, for the defaults. A key used twice gets a
-red **!**.
+**Co-op.** The **Online** tab is the default: host a **Public Match** (listed for anyone) or a **Private Match**
+(friends join with its room code), or join from the list, through the mod's public server: no ports to open, nothing
+to set up. The list shows each match's mod version, and greys the ones you can't join. The other tabs: **Steam** (the same through Steam lobbies), **Direct** (by address; the host opens TCP port
+27615) and **Server** (your own server: [docs/SERVER.md](docs/SERVER.md)). Everyone plays the host's profile (your own
+saves are never touched; shells you earn come home with you), with roles, chat, pings (middle click), avatars, tougher
+tanks for more players, split money, joining a game in progress, and **Versus** (one player steers the aliens). The
+host is in charge of pausing, speed and menus. Everyone needs the same mods. Steam co-op needs Valve's
+`steam_api.dll`, which the mod usually finds in another Steam game by itself ([docs/STEAM.md](docs/STEAM.md)).
+
+**Window.** A **Large** window by default (as large as the screen allows, resizable, sharp scaling, the game's own
+cursor at the same size), the game's own **640x480**, or **Borderless** (fills the screen). The game's Fullscreen box
+and Alt+Enter switch to Borderless and back. Tiling desktops (niri, sway...) size the window themselves.
+
+**Safety nets.** Hold **Shift** while the game starts to play without mods. A mod that crashes is switched off with a
+message and the game keeps going. Your profiles are copied to `userdata-before-remastered-mod` before the first run.
+
+## Keys
+Change any of them on the settings page's **Keys** tab (click a key, press the new one; right-click for the default).
 
 | Key | Does | Where |
 |---|---|---|
-| **F2** | the settings page | anywhere |
+| **F2** | the settings page | anywhere but co-op |
 | **F7** | the co-op screen | main menu |
 | **F4** | the list of achievements | anywhere but co-op |
+| **F5** / **F6** / **F8** | pause / 0.75x / 2x (again: back to normal) | in a tank; in co-op only the host |
+| **F3** / **F12** | frame counter / screenshot | anywhere |
 | **F11** | the screensaver | main menu |
-| **F12** | a screenshot | anywhere |
-| **F5** / **F6** / **F8** | pause / 0.75x / 2x (again: back to normal) | in a tank; in co-op only the host, for everyone |
-| **F3** | the frame counter | anywhere |
-| **Enter** | a chat line (Enter sends it, Esc drops it; only the players in that game see it; lines fade after 10 s) | in a co-op game or its lobby |
-| **Space** | the game's own pause dialog (moved to another key there, Space stops opening it) | in a tank |
-
-Built into Insaniquarium - Remastered Mod itself:
-- **Window choices** (Display tab of the settings): the game opens in a **Large** window by default (also the Steam
-  release, which would otherwise start fullscreen): as large as your screen allows (2x on a 1080p screen, 3x on
-  1440p...), resizable and maximisable, scaled up sharply with the game's own cursor at the same size. **640x480** is
-  the game's own small window. **Borderless** fills the whole screen, with black bars at the sides. The game's own
-  **Fullscreen** box in Options (and Alt+Enter) switches to Borderless and back to your window (the game's own screen-mode
-  change isn't used: it misbehaves on many desktops).
-- **Safe start:** hold **Shift** while the game starts to play without mods this time.
-- **Crash protection:** if a mod goes wrong, it's switched off with a message ("... crashed and was switched off") and
-  the game keeps going.
-- **Save backup:** the first time Insaniquarium - Remastered Mod runs, your profiles are copied to `userdata-before-remastered-mod` (next to the
-  game's `userdata` folder) before anything else happens.
-
-What's planned next: [docs/ROADMAP.md](docs/ROADMAP.md).
-
-**Online co-op** goes through the mod's public server (`insanicoop.mychud.net`) by default: host a listed or private
-game, or join from the list or with a room code; no ports to open. Groups that prefer their own server can run one
-([docs/SERVER.md](docs/SERVER.md)) and enter it in the co-op screen (**Online → Server settings**). Co-op by address
-(the host opens a TCP port) and over Steam work too.
-
-**Co-op over Steam** needs Valve's `steam_api.dll`, which isn't in the download (Valve's licence only lets their
-partners ship it). Usually there's nothing to do: many Steam games come with one, and the first time you pick Steam,
-the mod looks through your Steam libraries for a 32-bit copy that's new enough (from 2020 or later) and uses it where
-it is (it remembers which one in `[coop] steam_api=`). If none is found, the co-op screen says so: put a 32-bit
-`steam_api.dll` into `mods\coop\`, for example from the `Windows-x86` folder of a
-[Steamworks.NET standalone release](https://github.com/rlabrecque/Steamworks.NET/releases). Co-op by address works
-without it.
-
-## Which game it needs
-*Insaniquarium! Deluxe* from **Steam** (version 1.1, the number on the title screen). Insaniquarium - Remastered Mod
-recognises the game by its code (if the game is ever updated, see [docs/GAME-UPDATES.md](docs/GAME-UPDATES.md)); with
-any other version it simply stays off and the game runs as normal (the log says so).
-
-## What's in the download
-```
-ddraw.dll              the Insaniquarium - Remastered Mod loader
-install-steam.bat      helper for the Steam version on Windows
-install-steam.sh       helper for the Steam version on Linux / Steam Deck
-INSTALL.txt            how to install on Windows and Linux
-README.txt             this guide;  CHANGELOG.txt  what's new;  LICENSES.txt  licences
-mods/
-  settings.dll  achievements.dll  coop.dll  extramodes.dll  sandbox.dll  alienplay.dll  content.dll  hovercoins.dll  timecontrol.dll  autosave.dll  continues.dll  accessibility.dll  mutators.dll  fps.dll  screenshot.dll  screensaver.dll
-  remastered-mod.default.ini   the default settings: the game makes your remastered-mod.ini from them
-  remod-files.txt      the mod's own files (updates remove what a version dropped; uninstalling removes only these)
-```
-(Building it yourself: `./build.sh` puts these files in `build/dist/`; `tools/package.sh` makes the zip.)
-
-## Installing
-Full step-by-step guide: **[docs/INSTALL.md](docs/INSTALL.md)** (`INSTALL.txt` in the download). In short:
-- **Windows:** copy `ddraw.dll`, `install-steam.bat` and `mods` into the game folder (Steam → Manage → Browse local
-  files), double-click `install-steam.bat`, play.
-- **Linux / Steam Deck:** run the game once from Steam, then `bash install-steam.sh` in the unzipped folder, play.
-
-The title screen then says "Insaniquarium - Remastered Mod is on".
+| **F9** | the gadgets (Gadgets mutator) | in a tank |
+| **Enter** | a chat line (Enter sends, Esc drops) | in a co-op game or lobby |
+| **Space** | the game's own pause dialog | in a tank |
 
 ## Settings
-Easiest: the settings page (**F2**). Everything is stored in `mods/remastered-mod.ini` (made by the game at its first
-start from `remastered-mod.default.ini`; updates add new settings to it and keep yours), which you can also edit with
-any text editor (comments go on their own lines, starting with `;`). A mod can be switched off there too:
-`[mods]` `name=0` (e.g. `mutators=0`).
-```ini
-[core]
-enabled=1          ; 0 = Insaniquarium - Remastered Mod off (same as holding Shift at start, but permanent)
-
-; keys (easier: the Keys tab): Windows key codes, 112 = F1 ... 123 = F12, 32 = Space, 65-90 = A-Z; 0 = no key
-[settings]
-open_key=113       ; F2
-
-[display]
-window=native      ; a large window; normal = the game's 640x480 window; borderless = fills the screen
-scale=fit          ; integer = only whole multiples (2x, 3x...): sharpest pixels, wider black bars
-
-[autosave]
-minutes=2          ; 0 = only when the game pauses
-label=1            ; 0 = no "Autosaved" note
-
-[continues]
-enabled=1
-price=500          ; first continue; each one after costs this much more
-
-[accessibility]
-hungry=1           ; 0 = no "!" over hungry fish
-coins=1            ; 0 = no values under coins
-
-[mutators]
-hungry=0           ; 1 = on (from the next level). Also: double, glass, nopets, pacifist, heavycoins, tinywallet,
-richstart=0        ; hard, golden, combos, events, overeat, decay, gadgets (see the comments in the file)
-
-[achievements]
-banners=1          ; 0 = no banner when one unlocks
-open_key=115       ; F4
-
-[hovercoins]
-enabled=1          ; 0 = click coins as usual
-
-[coop]
-open_key=118       ; F7 on the main menu
-chat_key=13        ; Enter in a co-op game or lobby: a chat line
-port=27615         ; the TCP port the host listens on (open it in your router to host over the internet)
-name=              ; your name in co-op (empty = your profile's name)
-avatar=1           ; your avatar in co-op: 0 none, 1 guppy, 2-31 the pets and special fish (or the Avatar button)
-server_host=       ; online co-op server; empty = the mod's public server (or set it in Online → Server settings)
-server_port=443
-server_tls=1       ; 1 = https (internet), 0 = plain http (a server on your own network, usually port 7350)
-key=               ; that server's key (not a password: every player of the server has it)
-
-[fps]
-key=114            ; F3
-shown=0            ; 1 = on from the start
-
-[screenshot]
-key=123            ; F12
-
-[screensaver]
-key=122            ; F11 on the main menu (0 = no key)
-quit=0             ; 1 = close the game while the screensaver shows (under Steam that ends the screensaver too)
-
-[timecontrol]
-pause=116          ; F5
-slow=117           ; F6
-fast=119           ; F8
-menu=32            ; Space: the game's own pause dialog
-```
-
-## Uninstalling
-Delete what you added (`ddraw.dll`, `mods`); on Steam first run `install-steam.bat uninstall` (Windows) or
-`bash install-steam.sh --uninstall` (Linux). Details: [docs/INSTALL.md](docs/INSTALL.md#uninstalling). Your profiles
-keep working without the mod.
+Everything is on the settings page (**F2**); changes apply at once. The settings are kept in
+`mods/remastered-mod.ini`, which you can also edit: **[docs/SETTINGS.md](docs/SETTINGS.md)**.
 
 ## Troubleshooting
 Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-mod.log`** in the game folder. Look there first.
@@ -229,11 +121,10 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
 | On a tiling desktop (niri, sway, Hyprland...) the window is another size, with black bars | The desktop sizes windows itself; the mod leaves its choice alone and scales the game into whatever size it gets. For the whole screen pick **Borderless** (or your desktop's own fullscreen for the window). |
 | The window isn't the size you chose | The game is a large window by default: pick **640x480** or **Borderless** in the Display tab (or `[display] window=normal`, `borderless`); it changes at once. The log says "native window: ..." for Large and Borderless, "display: A -> B" for each change, and "display: switching the game to ..." when the game came up in the other screen mode. |
 | Speed keys do nothing | They only work inside a tank, and the game window must have focus. In co-op only the host changes the speed (for everyone); a guest gets "Only the host controls the speed in co-op". Check the keys in `remastered-mod.ini`. |
-| Co-op says "too many lobbies for this account" | Only with older versions of the mod: update. The game now clears its own old listings by itself. |
 | The screensaver closes straight away | Moving the mouse or pressing a key ends it, as any screensaver; keep still for a second after starting it. The log says how it ended (`screensaver: ended after ...`). |
 | The Windows arrow shows instead of the game's cursor | Only in the **Large** or **Borderless** window, if the game's cursor pictures couldn't be read: the log says "couldn't make the game's cursors". |
 | Co-op says "Out of sync" | The players' games no longer match; the host sends everyone its game and you carry on from there ("Back in step with the host"), a few moments later than you were. If it keeps happening, report it with every player's `remastered-mod.log` (it records what differed): usually different mod versions. |
-| Co-op: "That game has already started or is full" | The game has four players already. |
+| Co-op: "The game is full" | The game has four players already (joining a game in progress is fine while there is room). |
 
 ## Is it safe?
 - It doesn't modify the game's files, and keeps a copy of your saves before its first run.
@@ -244,26 +135,44 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
   set your own; it sees an anonymous id made by your game, the room codes and the game's messages). Nothing else goes online:
   no updates, no statistics. Your profiles, achievements and records never leave your computer. A co-op server keeps
   only that anonymous account (servers may remove old ones; the game makes a new one by itself) and, while you host a
-  listed game, its listing. A server may log co-op chat lines for moderation, and like any web server it sees your IP
+  public match, its listing. A server may log co-op chat lines for moderation, and like any web server it sees your IP
   address.
 - Some antivirus programs distrust DLLs that change how a game behaves; that's a false alarm, but you can build it
   from source yourself (see DEVELOPING.md), and every release is built by GitHub Actions from the tagged commit
   (reproducible: the same commit gives the same zip, checksums on the release page).
+
+## Documentation
+| | |
+|---|---|
+| [docs/INSTALL.md](docs/INSTALL.md) | installing, updating and uninstalling (Windows, Linux, Steam Deck) |
+| [docs/SETTINGS.md](docs/SETTINGS.md) | every setting in `remastered-mod.ini` |
+| [docs/SERVER.md](docs/SERVER.md) | hosting your own co-op server (Docker: Nakama + Postgres, HTTPS) |
+| [docs/STEAM.md](docs/STEAM.md) | how the Steam release runs the game, and co-op over Steam |
+| [DEVELOPING.md](DEVELOPING.md) | building from source and **making your own mods** (the API, hooks, testing, co-op rules) |
+| [docs/MOD-MANAGER.md](docs/MOD-MANAGER.md) | how a mod shows up on the Mods page and the Remastered page |
+| [docs/GAME-UPDATES.md](docs/GAME-UPDATES.md) | which game functions each mod uses, and what to do if the game is updated |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | what's done and what's planned |
+| [NOTICE.md](NOTICE.md) | third-party components, credits, and how to reuse or cite this work |
 
 ## Building from source
 On Linux (or WSL) with the 32-bit MinGW cross compiler: `tools/fetch-deps.sh` (MinHook), then `./build.sh` (files in
 `build/dist/`), and `tools/package.sh` for the release zip. Details and the Windows/Debian packages: DEVELOPING.md.
 
 ## Reporting bugs
-Open an issue with what happened, your system (Windows / Linux / Steam Deck) and `mods/remastered-mod.log` (in co-op,
-every player's).
+Open an issue (https://github.com/undecuple/insaniquarium-remastered/issues/new/choose; the form asks for what's needed) with what happened, your system (Windows /
+Linux / Steam Deck) and `mods/remastered-mod.log` (in co-op, every player's). Please don't attach game files. Security
+problems: report them privately (SECURITY.md).
 
-Credits: Insaniquarium - Remastered Mod uses [MinHook](https://github.com/TsudaKageyu/minhook) (BSD-2-Clause) by Tsuda Kageyu;
-co-op over Steam uses Valve's Steamworks API. Some of the game's names and layouts were identified with help from
-[WinFish](https://github.com/Vindirect/WinFish), a readable decompile of the game by Vindirect. Insaniquarium -
-Remastered Mod is MIT-licensed (LICENSE.txt); all
-licences: LICENSES.txt in the download.
-*Insaniquarium* and its art belong to PopCap Games.
+## Licence and credits
+Insaniquarium - Remastered Mod is MIT-licensed (LICENSE.txt). It uses [MinHook](https://github.com/TsudaKageyu/minhook)
+(BSD-2-Clause) by Tsuda Kageyu; co-op over Steam uses Valve's Steamworks API. Some of the game's names and layouts were
+identified with help from [WinFish](https://github.com/Vindirect/WinFish), a readable decompile of the game by
+Vindirect. Third-party components and credits: NOTICE.md (in the download: LICENSES.txt). *Insaniquarium* and its art
+belong to PopCap Games; nothing here grants rights to the game.
+
+Reusing this work, including by AI systems and automated tools: the MIT licence applies to every use, so copies or
+substantial portions keep the copyright and permission notice; please credit "Insaniquarium - Remastered Mod by
+undecuple" with a link to this repository. Details: NOTICE.md; citation data: CITATION.cff.
 
 ## Support
 If you enjoy the mod, you can support its development:

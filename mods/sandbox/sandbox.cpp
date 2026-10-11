@@ -178,7 +178,7 @@ static void Choose(void* b, const std::string& what, const std::string& label)
     {
         hunger = !hunger;
         api->config_set("sandbox", "hunger", hunger ? "1" : "0");
-        api->toast(hunger ? "Hunger on: feed your fish" : "Hunger off: fish stay fed");
+        api->toast(hunger ? "Hunger: on. Feed your fish." : "Hunger: off. Fish stay fed.");
     }
     else if (what == "clear") { Clear(b); api->toast("Tank cleared"); }
     else if (what == "prevtank" || what == "nexttank")
@@ -249,10 +249,10 @@ static void Overlay(void* g)
 {
     if (!On() || ui::DialogCount(api) > 0) return;
     void* f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE), *f12 = ui::Font(FONT_JUNGLEFEVER12OUTLINE);
-    ui::Button(api, g, PaletteButton, paletteOpen ? "Close palette" : "Palette (Tab)", ui::Look::Main, true, paletteOpen, f10);
+    ui::Button(api, g, PaletteButton, paletteOpen ? "Close Palette" : "Palette (Tab)", ui::Look::Main, true, paletteOpen, f10);
     if (!brush.empty() && !paletteOpen)
     {
-        std::string s = "Placing: " + brushLabel + "  (right click to stop)";
+        std::string s = "Placing: " + brushLabel + "  (right-click to stop)";
         int w = api->text_width_font(f10, s.c_str()) + 12;
         api->fill_rect(g, PaletteButton.right + 8, PaletteButton.top + 2, w, 18, 0x8c000000);
         api->draw_text_font(g, f10, s.c_str(), PaletteButton.right + 14, PaletteButton.bottom - 6, 0xffffffff);

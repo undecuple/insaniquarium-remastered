@@ -28,7 +28,7 @@ extern "C" __declspec(dllexport) void RemodOpen()
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {
-    if (a->version < REMOD_API_VERSION) return 0;
+    if (a->version < 3) return 0;   // needs API 3 (config_set); newer cores run it too
     api = a;
     tag = api->config_int("hello", "tag", 1) != 0;
     api->on_tick(Tick);

@@ -36,7 +36,7 @@ static void Load()
     on = api->config_int("fps", "shown", 0) != 0;
 }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "A frame counter in the corner (F3)."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "A frame counter in the corner (its key is on the Keys tab)."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

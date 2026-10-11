@@ -39,12 +39,12 @@ static const Def All[] = {
     { "low_tech", "Pea Shooter", "Defeat an alien with the starting laser.", nullptr, 1, 750 },
     { "pets_12", "Pet Lover", "Own 12 pets.", nullptr, 1, 1000 },
     { "pets_24", "Full House", "Own all 24 pets.", nullptr, 1, 3000 },
-    { "shells_1000", "Shell Shocked", "Have 1,000 shells.", nullptr, 1, 250 },
+    { "shells_1000", "Shell Shocked", "Have 1,000 Shells.", nullptr, 1, 250 },
     { "vt_buy", "Window Shopper", "Buy something in the Virtual Tank store.", nullptr, 1, 100 },
     { "coop_level", "Better Together", "Finish a level in co-op.", nullptr, 1, 500 },
     { "coop_full", "Full Tank", "Play co-op with 4 players.", nullptr, 1, 1000 },
-    { "daily", "Daily Diver", "Finish a daily challenge.", nullptr, 1, 500 },
-    { "bossrush", "Boss Basher", "Clear the boss rush.", nullptr, 1, 2500 },
+    { "daily", "Daily Diver", "Finish a Daily Challenge.", nullptr, 1, 500 },
+    { "bossrush", "Boss Basher", "Clear Boss Rush.", nullptr, 1, 2500 },
     { "alienplay", "Role Reversal", "Clear a stage as the alien.", nullptr, 1, 1000 },
     { "alienplay_all", "Conqueror", "Clear all 20 stages as the alien.", nullptr, 1, 5000 },
     { "teamwork", "Teamwork", "Rescue a starving fish together in co-op.", nullptr, 1, 500 },
@@ -279,8 +279,8 @@ static int Mouse(int x, int y, int button, int down)
     if (y >= DY + DH - 70) return 0;   // CLOSE
     if (down && button == 0)
     {
-        if (ui::In(Prev(), x, y) && page > 0) page--;
-        else if (ui::In(Next(), x, y) && page < Pages() - 1) page++;
+        if (ui::In(Prev(), x, y) && page > 0) { ui::Click(api); page--; }
+        else if (ui::In(Next(), x, y) && page < Pages() - 1) { ui::Click(api); page++; }
         api->redraw();
     }
     return 1;
@@ -295,17 +295,17 @@ static int Key(int vk, int down)
 
 static void DrawList(void* g)
 {
-    void* f12 = ui::Font(FONT_JUNGLEFEVER12OUTLINE), *f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE);
+    void* f12 = ui::F12(), *f10 = ui::F10();
     char s[160];
     int got = 0;
     for (auto& d : All) if (unlocked.count(d.id)) got++;
     long long pending = counters.count("pending_shells") ? counters["pending_shells"] : 0;
     snprintf(s, sizeof s, "%d of %d unlocked", got, Count_);
-    api->draw_text_font(g, f12, s, CX, DY + 80, 0xffffffff);
+    api->draw_text_font(g, f12, s, CX, DY + 80, ui::Gold);
     if (pending > 0)
     {
-        snprintf(s, sizeof s, "%lld shells waiting (paid on the main menu)", pending);
-        api->draw_text_font(g, f10, s, CX + CW - api->text_width_font(f10, s), DY + 80, 0xffffe8a0);
+        snprintf(s, sizeof s, "%s Shells waiting (paid on the main menu)", ui::Thousands(pending).c_str());
+        api->draw_text_font(g, f10, s, CX + CW - api->text_width_font(f10, s), DY + 80, ui::White);
     }
     for (int i = 0; i < PerPage; i++)
     {
@@ -317,19 +317,19 @@ static void DrawList(void* g)
         api->fill_rect(g, CX, y, CW, 40, on ? 0x40fff060 : 0x30000000);
         ui::FitText(api, g, f12, d.name, CX + 10, y + 17, CW - 150, on ? ui::Yellow : 0xffd0d0d0);
         ui::FitText(api, g, f10, d.desc, CX + 10, y + 34, CW - 110, ui::White);
-        snprintf(s, sizeof s, on ? "%d shells" : "%d shells", d.shells);
-        api->draw_text_font(g, f10, s, CX + CW - 10 - api->text_width_font(f10, s), y + 17, on ? 0xff9cf09c : 0xffffe8a0);
+        snprintf(s, sizeof s, "%s Shells", ui::Thousands(d.shells).c_str());
+        api->draw_text_font(g, f10, s, CX + CW - 10 - api->text_width_font(f10, s), y + 17, on ? ui::Green : ui::MenuSub);
         if (d.counter && !on)
         {
-            snprintf(s, sizeof s, "%lld / %d", std::min<long long>(counters[d.counter], d.goal), d.goal);
-            api->draw_text_font(g, f10, s, CX + CW - 10 - api->text_width_font(f10, s), y + 34, 0xffffffff);
+            snprintf(s, sizeof s, "%s / %s", ui::Thousands(std::min<long long>(counters[d.counter], d.goal)).c_str(), ui::Thousands(d.goal).c_str());
+            api->draw_text_font(g, f10, s, CX + CW - 10 - api->text_width_font(f10, s), y + 34, ui::White);
         }
-        else if (on) api->draw_text_font(g, f10, "Unlocked", CX + CW - 10 - api->text_width_font(f10, "Unlocked"), y + 34, 0xff9cf09c);
+        else if (on) api->draw_text_font(g, f10, "Unlocked", CX + CW - 10 - api->text_width_font(f10, "Unlocked"), y + 34, ui::Green);
     }
     snprintf(s, sizeof s, "Page %d / %d", page + 1, Pages());
-    api->draw_text_font(g, f12, s, CX + (CW - api->text_width_font(f12, s)) / 2, DY + DH - 90, 0xffffffff);
-    ui::Button(api, g, Prev(), "< Prev", ui::Look::Center, page > 0);
-    ui::Button(api, g, Next(), "Next >", ui::Look::Center, page < Pages() - 1);
+    api->draw_text_font(g, f12, s, CX + (CW - api->text_width_font(f12, s)) / 2, DY + DH - 90, ui::White);
+    ui::Button(api, g, Prev(), "Previous", ui::Look::Main, page > 0);
+    ui::Button(api, g, Next(), "Next", ui::Look::Main, page < Pages() - 1);
     ui::DrawTooltip(api, g);
 }
 
@@ -356,7 +356,7 @@ static void Overlay(void* g)
             Save();
             reinterpret_cast<bool(__thiscall*)(void*)>(App_SaveProfile)(api->app());
             char t[80];
-            snprintf(t, sizeof t, "+%lld shells from achievements", n);
+            snprintf(t, sizeof t, "+%s Shells from achievements", ui::Thousands(n).c_str());
             api->toast(t);
             CheckProfile();
         }
@@ -367,16 +367,16 @@ static void Overlay(void* g)
     if (!banner && !queue.empty() && !open) { banner = queue.front(); queue.erase(queue.begin()); bannerUntil = now + 4000; api->play_sound(268); }   // SOUND_TONEHI
     if (banner)
     {
-        void* f12 = ui::Font(FONT_JUNGLEFEVER12OUTLINE), *f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE);
+        void* f12 = ui::F12(), *f10 = ui::F10();
         char t[96];
-        snprintf(t, sizeof t, "%s  (+%d shells)", banner->desc, banner->shells);
+        snprintf(t, sizeof t, "%s  (+%s Shells)", banner->desc, ui::Thousands(banner->shells).c_str());
         int w = std::max(api->text_width_font(f12, banner->name) + 180, api->text_width_font(f10, t)) + 30;
-        int x = (640 - w) / 2, y = 76;
-        api->fill_rect(g, x, y, w, 44, 0xe0201040);
-        api->fill_rect(g, x + 2, y + 2, w - 4, 40, 0xe0402080);
+        int x = (640 - w) / 2, y = api->board() ? 100 : 76;   // in a tank: below the HUD labels at y 74-96 (combo, modes)
+        api->fill_rect(g, x, y, w, 44, 0xe0101840);   // the toasts' navy
+        api->fill_rect(g, x + 2, y + 2, w - 4, 40, 0xe0202868);
         std::string head = std::string("Achievement unlocked: ") + banner->name;
-        api->draw_text_font(g, f12, head.c_str(), x + (w - api->text_width_font(f12, head.c_str())) / 2, y + 19, 0xfffff000);
-        api->draw_text_font(g, f10, t, x + (w - api->text_width_font(f10, t)) / 2, y + 36, 0xffffffff);
+        api->draw_text_font(g, f12, head.c_str(), x + (w - api->text_width_font(f12, head.c_str())) / 2, y + 19, ui::Gold);
+        api->draw_text_font(g, f10, t, x + (w - api->text_width_font(f10, t)) / 2, y + 36, ui::White);
     }
 }
 
@@ -395,7 +395,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID)
 
 static void Load() { banners = api->config_int("achievements", "banners", 1) != 0; }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "31 achievements with shell rewards; the list is on the main menu (F4)."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "31 achievements with shell rewards; the list is on the Remastered page."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

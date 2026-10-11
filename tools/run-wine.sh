@@ -58,8 +58,13 @@ fi
 if [ -n "${WINE:-}" ]; then export PATH="$(dirname "$WINE"):$PATH"; fi
 export WINEDEBUG=-all WINEDLLOVERRIDES="ddraw=n,b"
 # silent by default: Wine's audio drivers switched off, so a test game has no sound device and never plays through
-# the speakers (nor shows up in the desktop's mixer); SOUND=1 keeps the sound
-[ "${SOUND:-0}" = 1 ] || WINEDLLOVERRIDES="$WINEDLLOVERRIDES;winepulse.drv,winealsa.drv,wineoss.drv,winecoreaudio.drv=d"
+# the speakers (nor shows up in the desktop's mixer); SOUND=1 keeps the sound; SOUND=pulse keeps only Wine's PulseAudio
+# driver, for recording through a private server (PULSE_SERVER=unix:SOCKET) that never reaches the speakers
+case "${SOUND:-0}" in
+  1) ;;
+  pulse) WINEDLLOVERRIDES="$WINEDLLOVERRIDES;winealsa.drv,wineoss.drv,winecoreaudio.drv=d" ;;
+  *) WINEDLLOVERRIDES="$WINEDLLOVERRIDES;winepulse.drv,winealsa.drv,wineoss.drv,winecoreaudio.drv=d" ;;
+esac
 if [ -n "${NOOVERRIDE:-}" ]; then   # NOOVERRIDE=1: rely on the prefix's own ddraw override (install-steam.sh)
   WINEDLLOVERRIDES=${WINEDLLOVERRIDES#ddraw=n,b}; WINEDLLOVERRIDES=${WINEDLLOVERRIDES#;}
   [ -n "$WINEDLLOVERRIDES" ] || unset WINEDLLOVERRIDES

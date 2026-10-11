@@ -6,8 +6,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include <algorithm>
+#include <atomic>
 #include <deque>
 #include <map>
 #include <memory>
@@ -32,6 +34,17 @@ void Log(const char* fmt, ...)
     if (!logf) return;
     char b[400]; va_list a; va_start(a, fmt); vsnprintf(b, sizeof b, fmt, a); va_end(a);
     logf(b);
+}
+
+// a query-string value: letters, digits and -_.~ as they are, the rest %XX
+std::string UrlEncode(const std::string& v)
+{
+    static const char hex[] = "0123456789ABCDEF";
+    std::string o;
+    for (unsigned char c : v)
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') o += (char)c;
+        else { o += '%'; o += hex[c >> 4]; o += hex[c & 15]; }
+    return o;
 }
 
 // ---- small helpers: JSON, base64, random -------------------------------------------------------------------------
@@ -402,7 +415,7 @@ struct Session
                 if (host) { Fail("The room code " + code + " is already in use: host again for a new code"); return; }
                 if (!hostId) { hostId = from; events.push_back({ 1, "", from }); }
             }
-            else if (op == OpClosed) { if (!host) Fail("That game has already started or is full"); }
+            else if (op == OpClosed) { if (!host) Fail("The game is full"); }
             else if (op == OpData || op == OpPart)
             {
                 if (!host && from != hostId) return;     // a guest only listens to the host
@@ -420,6 +433,7 @@ std::string server, key, device;
 // the "Find games" list: filled by a background thread
 std::mutex listMutex;
 std::vector<Lobby> lobbies, found;
+std::string foundServer;   // the server `found` came from: a failed refresh keeps that server's last list
 bool listReady;
 std::string listError;
 DWORD lastRefresh;
@@ -477,7 +491,8 @@ void List(const Session& s, int members)
 {
     // the time goes in too: with no code on the server, nothing removes a listing left behind, so readers skip old ones
     std::string value = "{\"tag\":" + Quote(s.tag) + ",\"name\":" + Quote(s.name) + ",\"code\":" + Quote(s.code) +
-                        ",\"members\":" + std::to_string(members) + ",\"time\":" + std::to_string((long long)time(nullptr)) + "}";
+                        ",\"members\":" + std::to_string(members) + ",\"time\":" + std::to_string((long long)time(nullptr)) +
+                        ",\"version\":" + Quote(REMOD_VERSION) + "}";
     std::string out, why;
     std::string body = "{\"objects\":[{\"collection\":\"" + std::string(Collection) + "\",\"key\":\"" + ListingKey + "\",\"value\":" + Quote(value) +
                        ",\"permission_read\":2,\"permission_write\":1}]}";
@@ -618,7 +633,7 @@ void Begin(bool host, const std::string& code, bool listed, const std::string& n
 {
     Leave();
     auto s = std::make_shared<Session>();
-    if (!ParseUrl(server, s->url)) { if (ev.failed) ev.failed("Server: the server address isn't valid (check the server settings)"); return; }
+    if (!ParseUrl(server, s->url)) { if (ev.failed) ev.failed("Server: the server address isn't valid (check the Server tab)"); return; }
     s->key = key; s->device = device; s->code = code; s->host = host; s->listed = listed; s->name = name; s->tag = tag;
     cur = s;
     std::thread(Worker, s).detach();
@@ -658,27 +673,46 @@ void Join(const std::string& code) { Begin(false, CleanCode(code), false, "", ""
 void Refresh(const std::string& tag)
 {
     Url u;
-    if (!ParseUrl(server, u)) { std::lock_guard<std::mutex> lock(listMutex); listError = "the server address isn't valid"; listReady = true; return; }
+    if (!ParseUrl(server, u)) { std::lock_guard<std::mutex> lock(listMutex); listError = "the server address isn't valid"; found.clear(); listReady = true; return; }
     {
         std::lock_guard<std::mutex> lock(listMutex);
-        if (GetTickCount() - lastRefresh < 3000) { listError = "a moment, please: the list was just asked for"; listReady = true; return; }
+        if (GetTickCount() - lastRefresh < 3000) { listError.clear(); listReady = true; return; }   // just asked: the last list stands
         lastRefresh = GetTickCount();
     }
-    std::string k = key, dev = device;
+    std::string k = key, dev = device, srv = server;
     Log("online: asking %s for its games", u.host.c_str());
-    std::thread([u, k, dev, tag] {
+    static std::atomic<int> generation{ 0 };   // only the newest request's answer is kept (they run side by side)
+    int mine = ++generation;
+    std::thread([u, k, dev, srv, tag, mine] {
         std::string why, out;
         std::vector<Lobby> ls;
-        int st = Authed(u, k, dev, L"GET", std::string("/v2/storage/") + Collection + "?limit=100", "", out, why);
-        Json j;
-        if (st == 200 && Parse(out, j))
+        // every page of listings (the server returns 100 at a time; old ones left behind could fill the first page);
+        // a page that fails after others came back keeps what was read
+        int st = 0, pages = 0;
+        std::string cursor;
+        std::vector<Json> objects;
+        for (int pageNo = 0; pageNo < 10; pageNo++)
+        {
+            std::string path = std::string("/v2/storage/") + Collection + "?limit=100" + (cursor.empty() ? "" : "&cursor=" + UrlEncode(cursor));
+            st = Authed(u, k, dev, L"GET", path, "", out, why);
+            Json j;
+            if (st != 200) break;
+            if (!Parse(out, j)) { st = -2; break; }
+            pages++;
+            for (auto& o : j["objects"].arr) objects.push_back(o);
+            cursor = j["cursor"].str;
+            if (cursor.empty()) break;
+        }
+        if (st == -2 && !pages) why = "the server's answer couldn't be read";
+        if (pages)
         {
             why.clear();
             long long now = (long long)time(nullptr);
-            for (auto& o : j["objects"].arr)
+            for (auto& o : objects)
             {
                 Json v;
-                if (!Parse(o["value"].str, v) || v["tag"].str != tag) continue;   // other mod sets, other games
+                // matches with this mod set, and (from 0.3.0, which says its version) every other version too: shown greyed
+                if (!Parse(o["value"].str, v) || (v["tag"].str != tag && v["version"].str.empty())) continue;
                 // hosts refresh their entry every 30 s; ones older than 2 minutes were left behind
                 long long at = v["time"].integer();
                 if (at <= 0)
@@ -691,13 +725,16 @@ void Refresh(const std::string& tag)
                     }
                 }
                 if (at > 0 && now - at > 120) continue;
-                ls.push_back({ v["code"].str, v["name"].str, (int)v["members"].integer() });
+                ls.push_back({ v["code"].str, v["name"].str, (int)v["members"].integer(), v["version"].str, v["tag"].str });
             }
         }
         else if (why.empty()) why = Describe(st);
         Log("online: the list came back (%d): %d game(s)%s%s", st, (int)ls.size(), why.empty() ? "" : ", ", why.c_str());
         std::lock_guard<std::mutex> lock(listMutex);
-        found = ls; listError = why; listReady = true;
+        if (mine != generation) return;   // a newer request is on its way
+        if (pages) { found = ls; foundServer = srv; }
+        else if (foundServer != srv) found.clear();
+        listError = pages ? "" : why; listReady = true;
     }).detach();
 }
 std::string ListError() { std::lock_guard<std::mutex> lock(listMutex); return listError; }

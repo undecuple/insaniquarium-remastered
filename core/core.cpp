@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
+#include <deque>
 #include <vector>
 #include <map>
 #include "MinHook.h"
@@ -46,7 +47,7 @@ int gMouseX, gMouseY;      // last pointer position in game coordinates
 bool gSwallowUp[3];        // a mod took this button's press: keep its release from the game too
 std::vector<HMODULE> gDisabled;   // mods switched off after a crash
 struct ModInfo { std::string name, description; int state; HMODULE module; };
-std::vector<ModInfo> gMods;
+std::deque<ModInfo> gMods;   // a deque: names handed out by mod_list stay put while mods are added
 std::string gToast;
 DWORD gToastUntil;   // GetTickCount() when the toast goes away (0: not shown yet)
 bool gToastUntilInput;   // the toast stays until the player clicks or presses a key (the start-up message)
@@ -319,13 +320,51 @@ int Hook(void* target, void* detour, void** original)
     return 1;
 }
 
-void Toast(const char* text) { gToast = text; gToastUntil = 0; gToastUntilInput = false; gToastTop = false; gRedraw = true; Log("toast: %s", text); }   // 3 s from when it first shows
+int TextWidthFont(void* font, const char* text);
+// in a tank (not in co-op), a short message goes on the game's own message line, as Board::ShowText(text, false, -1)
+// does: id -1 (never its once-per-level hint slots), 100 ticks, its green on dark green. The line is display only.
+static bool GameMessage(const char* text)
+{
+    void* b = CurrentBoard();
+    void* a = App();
+    if (!b || !a || at<bool>(b, Board_mPaused) || at<int>(a, App_mDialogCount) > 0) return false;
+    void* w = at<void*>(b, Board_mMessageWidget);
+    void* font = *reinterpret_cast<void**>(FONT_CONTINUUMBOLD14);
+    if (!w || !font || TextWidthFont(font, text) > 440) return false;
+    static int (*coopPlaying)() = nullptr;
+    static bool looked;
+    if (!looked) { looked = true; if (HMODULE m = GetModuleHandleA("coop.dll")) coopPlaying = reinterpret_cast<int (*)()>(GetProcAddress(m, "CoopPlaying")); }
+    if (coopPlaying && coopPlaying()) return false;   // co-op keeps the toast box: nothing local touches the shared game
+    MsvcString s = MakeString(text);
+    reinterpret_cast<void*(__thiscall*)(void*, const MsvcString*, size_t, size_t)>(String_Assign)(static_cast<char*>(w) + Message_mText, &s, 0, (size_t)-1);
+    int* fill = &at<int>(w, Message_mColor), *edge = &at<int>(w, Message_mOutline);
+    fill[0] = 0xb4; fill[1] = 0xfa; fill[2] = 0x5a; fill[3] = 0xff;   // the game's own colours (an alien warning turns them red)
+    edge[0] = 0; edge[1] = 0x4b; edge[2] = 0; edge[3] = 0xff;
+    at<int>(w, Message_mId) = -1;
+    at<bool>(w, Message_mBlink) = false;
+    at<int>(w, Message_mTimer) = 100;
+    return true;
+}
+void Toast(const char* text)
+{
+    Log("toast: %s", text);
+    if (GameMessage(text)) return;
+    gToast = text; gToastUntil = 0; gToastUntilInput = false; gToastTop = false; gRedraw = true;   // 3 s from when it first shows
+}
 void Redraw() { gRedraw = true; }
 void MousePos(int* x, int* y) { if (x) *x = gMouseX; if (y) *y = gMouseY; }
 void PlayGameSound(int id)
 {
     void* b = CurrentBoard();
-    if (b) reinterpret_cast<void(__thiscall*)(void*, int, int, double)>(Board_PlaySample)(b, id, 3, 1.0);
+    // Board::PlaySample (with its repeat throttle) only knows the tank's sounds (resource ids 0x106-0x145); anything else,
+    // or no tank, plays the way SexyAppBase::PlaySample does: the sound manager's instance of it, played once
+    if (b && id >= 0x106 && id < 0x146) { reinterpret_cast<void(__thiscall*)(void*, int, int, double)>(Board_PlaySample)(b, id, 3, 1.0); return; }
+    void* app = App();
+    void* sm = app ? at<void*>(app, App_mSoundManager) : nullptr;
+    if (!sm || (id != 13 && (id < 0x106 || id > 0x145))) return;   // the sound resources: SOUND_BUTTONCLICK and 262-325
+    int num = reinterpret_cast<int(__cdecl*)(int)>(GetResourceById)(id);
+    void* inst = reinterpret_cast<void*(__thiscall*)(void*, int)>((*reinterpret_cast<void***>(sm))[SoundManager_vGetSoundInstance / 4])(sm, num);
+    if (inst) reinterpret_cast<void(__thiscall*)(void*, bool, bool)>((*reinterpret_cast<void***>(inst))[SoundInstance_vPlay / 4])(inst, false, true);
 }
 void DrawImage(void* g, void* img, int x, int y)
 {
@@ -655,10 +694,25 @@ extern "C" void __cdecl AfterDrawScreen(void* wm, int drew)
         for (auto& cb : gOverlay) Guarded(cb.owner, "on_overlay", [&] { cb.fn(g); });
         if (toast)
         {
-            int w = TextWidth(gToast.c_str()) + 24;
-            int y = gToastTop ? 6 : 396;
-            FillRect(g, (640 - w) / 2, y, w, 26, 0xc0101840);
-            DrawText(g, gToast.c_str(), (640 - w) / 2 + 12, y + 18, 0xffffff80);
+            // wrapped to fit the screen (600 px a line), each line centred
+            std::vector<std::string> lines;
+            std::string line, word;
+            for (size_t i = 0; i <= gToast.size(); i++)
+            {
+                char c = i < gToast.size() ? gToast[i] : ' ';
+                if (c != ' ') { word += c; continue; }
+                if (word.empty()) continue;
+                std::string t = line.empty() ? word : line + " " + word;
+                if (!line.empty() && TextWidth(t.c_str()) > 600) { lines.push_back(line); line = word; } else line = t;
+                word.clear();
+            }
+            if (!line.empty()) lines.push_back(line);
+            int w = 0;
+            for (auto& l : lines) w = (std::max)(w, TextWidth(l.c_str()) + 24);
+            int h = 11 + 15 * (int)lines.size(), y = gToastTop ? 6 : 422 - h;
+            FillRect(g, (640 - w) / 2, y, w, h, 0xc0101840);
+            for (size_t i = 0; i < lines.size(); i++)
+                DrawText(g, lines[i].c_str(), (640 - TextWidth(lines[i].c_str())) / 2, y + 18 + 15 * (int)i, 0xffffff80);
         }
         reinterpret_cast<GraphicsDtorFn>(Graphics_dtor)(g);
     }
@@ -779,8 +833,11 @@ void LoadMods()
         auto init = m ? reinterpret_cast<RemodInitFn>(GetProcAddress(m, "RemodInit")) : nullptr;
         if (!init) { Log("%s: not a mod (%s)", fd.cFileName, m ? "no RemodInit" : "load failed"); gMods.push_back({ name, "", REMOD_MOD_BROKEN, m }); continue; }
         std::string description;
-        if (auto describe = reinterpret_cast<RemodDescribeFn>(GetProcAddress(m, "RemodDescribe"))) { const char* d = describe(); if (d) description = d; }
-        gMods.push_back({ name, description, REMOD_MOD_DECLINED, m });
+        bool described = true;
+        if (auto describe = reinterpret_cast<RemodDescribeFn>(GetProcAddress(m, "RemodDescribe")))
+            described = Guarded(m, "RemodDescribe", [&] { const char* d = describe(); if (d) description = d; });
+        gMods.push_back({ name, description, described ? REMOD_MOD_DECLINED : REMOD_MOD_CRASHED, m });
+        if (!described) continue;
         size_t slot = gMods.size() - 1;
         int ok = 0;
         if (!Guarded(m, "RemodInit", [&] { ok = init(&gApi); })) continue;
@@ -896,6 +953,8 @@ const DefaultChange kDefaultChanges[] = {
     { "0.2.0", "display", "window", "native", "normal" },   // the game's own 640x480 window by default
     { "0.2.0", "screensaver", "quit", "1", "0" },           // the game waits minimised (under Steam, closing it ended the screensaver)
     { "0.2.2", "display", "window", "normal", "native" },   // a large window by default again (640x480 was small on most screens)
+    { "0.3.0", "accessibility", "hungry", "1", "0" },       // accessibility marks off by default (Gameplay tab)
+    { "0.3.0", "accessibility", "coins", "1", "0" },
 };
 bool VersionLess(const std::string& a, const std::string& b)
 {

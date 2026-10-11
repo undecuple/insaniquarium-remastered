@@ -14,7 +14,7 @@
 //   events       feeding frenzies, power cuts and currents now and then
 //   overeat      feeding a full fish stuffs it (no coins for a while); three times and it pops
 //   decay        dead fish float until you click them away, and make the others hungry
-//   gadgets      buy an auto-feeder, a coin magnet and an alien alarm in each tank (panel top left)
+//   gadgets      buy an auto-feeder, a coin magnet and an alien alarm in each tank (the Other Gadgets button, bottom right, or F9)
 #include "remod.h"
 #include "game.h"
 #include "remodui.h"
@@ -50,8 +50,10 @@ static std::vector<Stuffed> stuffed;
 static std::vector<void*> decaying;
 // gadgets
 static bool feeder, magnet, alarm;
-static const RECT FeederRect = { 0x26, 0x4c, 0x26 + 0x8c, 0x4c + 0x16 }, MagnetRect = { 0x26, 0x66, 0x26 + 0x8c, 0x66 + 0x16 },
-                  AlarmRect = { 0x26, 0x80, 0x26 + 0x8c, 0x80 + 0x16 };
+// the gadgets: hidden until the Other Gadgets button (bottom right of the tank) or its key shows them, stacked above it
+static const RECT GadgetsBtn = { 474, 402, 632, 428 }, FeederRect = { 482, 324, 632, 346 }, MagnetRect = { 482, 350, 632, 372 },
+                  AlarmRect = { 482, 376, 632, 398 };   // above the speed label (y 430) and the game's message line
+static bool gadgetsShown;   // local only: in co-op the game gets every click (no buying), so the button stays away
 static const int FeederPrice = 750, MagnetPrice = 1500, AlarmPrice = 400;
 enum { SOUND_BUY = 273, SOUND_SONAR = 316, SOUND_SPLASH = 317 };
 
@@ -59,7 +61,9 @@ static bool On(int f) { return (active & f) != 0; }
 static bool Applies()
 {
     void* app = api->app();
-    return app && at<int>(app, App_mGameMode) != 5 && !at<bool>(app, App_mIsScreenSaver);
+    if (!app) return false;
+    int mode = at<int>(app, App_mGameMode);   // 3 sandbox, 5 Virtual Tank
+    return mode != 3 && mode != 5 && !at<bool>(app, App_mIsScreenSaver);
 }
 static bool OnHere(int f) { return On(f) && Applies(); }
 
@@ -115,11 +119,11 @@ extern "C" __declspec(dllexport) void MutatorsLoad(const void* buf, int len)
 }
 // co-op reloaded the board from a snapshot on every machine at once: the old objects are gone (the rest stays)
 extern "C" __declspec(dllexport) void MutatorsBoardReloaded(void* b) { golden.clear(); goldenBoard = b; stuffed.clear(); decaying.clear(); }
-// the set's names, for showing it (flags as above): "Hungry fish, Tiny wallet"
+// the set's names, for showing it (flags as above): "Hungry Fish, Tiny Wallet"
 extern "C" __declspec(dllexport) const char* MutatorsDescribe(int flags)
 {
-    static const char* names[] = { "Hungry fish", "Double trouble", "Glass cannon", "No pets", "Pacifist", "Heavy coins", "Tiny wallet",
-                                   "Rich start", "Hard mode", "Golden guppies", "Coin combos", "Tank events", "Overeating", "Decay", "Gadgets" };
+    static const char* names[] = { "Hungry Fish", "Double Trouble", "Glass Cannon", "No Pets", "Pacifist", "Heavy Coins", "Tiny Wallet",
+                                   "Rich Start", "Hard Mode", "Golden Guppies", "Coin Combos", "Tank Events", "Overeating", "Decay", "Gadgets" };
     static char out[256];
     out[0] = 0;
     for (int i = 0; i < 15; i++)
@@ -140,13 +144,12 @@ static void __fastcall InitLevel(void* b, void*)
     if (forced >= 0) { active = forced; forced = -1; }
     else for (auto& k : Keys) if (api->config_int("mutators", k.key, 0)) active |= k.flag;
     golden.clear(); goldenBoard = b; comboCount = 0; comboLastTick = -1000;
-    eventKind = EvNone; eventLeft = 0; eventTimer = api->config_int("mutators", "firstevent", 6000); stuffed.clear(); decaying.clear(); feeder = magnet = alarm = false;
+    eventKind = EvNone; eventLeft = 0; eventTimer = api->config_int("mutators", "firstevent", 6000); stuffed.clear(); decaying.clear(); feeder = magnet = alarm = false; gadgetsShown = false;
     oInitLevel(b);
-    void* app = api->app();
     for (int i = 0; i < 12; i++) lastPrice[i] = 0;
     lastAlienTimer = 0;
     if (!Applies() || !active) return;
-    if (On(Rich) && at<int>(app, App_mGameMode) != 3) { at<int>(b, Board_mMoney) = 1000; reinterpret_cast<VoidFn>(Board_UpdateMoneyLabel)(b); }
+    if (On(Rich)) { at<int>(b, Board_mMoney) = 1000; reinterpret_cast<VoidFn>(Board_UpdateMoneyLabel)(b); }
     api->log("mutators: level starts with set %d", active);
 }
 
@@ -407,7 +410,9 @@ static int Mouse(int x, int y, int button, int down)
 {
     void* b = api->board();
     if (!down || button != 0 || !b || !OnHere(Gadgets) || at<bool>(b, Board_mPaused) || at<bool>(b, Board_mBonusRound)) return 0;
-    if (at<int>(api->app(), App_mDialogCount) > 0) return 0;
+    if (at<int>(api->app(), App_mDialogCount) > 0 || ui::CoopPlaying()) return 0;
+    if (In(GadgetsBtn, x, y)) { gadgetsShown = !gadgetsShown; ui::Click(api); api->redraw(); return 1; }
+    if (!gadgetsShown) return 0;
     bool* which = In(FeederRect, x, y) ? &feeder : In(MagnetRect, x, y) ? &magnet : In(AlarmRect, x, y) ? &alarm : nullptr;
     if (!which) return 0;
     int price = Price(which == &feeder ? FeederPrice : which == &magnet ? MagnetPrice : AlarmPrice);
@@ -417,6 +422,19 @@ static int Mouse(int x, int y, int button, int down)
         api->play_sound(SOUND_BUY);
         api->redraw();
     }
+    return 1;
+}
+
+// the gadgets' key (F9 at first; the Keys tab) shows or hides them, as the button does
+static int Key(int vk, int down)
+{
+    void* b = api->board();
+    int k = api->config_int("mutators", "gadgets_key", VK_F9);
+    if (!down || !k || vk != k || !b || !OnHere(Gadgets) || ui::CoopPlaying() || at<bool>(b, Board_mPaused) || at<bool>(b, Board_mBonusRound)) return 0;
+    if (at<int>(api->app(), App_mDialogCount) > 0) return 0;
+    gadgetsShown = !gadgetsShown;
+    ui::Click(api);
+    api->redraw();
     return 1;
 }
 
@@ -476,15 +494,25 @@ static void Overlay(void* g)
         api->draw_text(g, s, 320 - w / 2 + 6, 90, 0xffffe060);
     }
     bool clear = !at<bool>(b, Board_mPaused) && at<int>(api->app(), App_mDialogCount) == 0;
-    if (clear && OnHere(Gadgets) && !at<bool>(b, Board_mBonusRound))
+    if (clear && OnHere(Gadgets) && !at<bool>(b, Board_mBonusRound) && !ui::CoopPlaying())
     {
         char t[48];
-        wsprintfA(t, feeder ? "Auto-feeder ON" : "Auto-feeder $%d", Price(FeederPrice)); Pill(g, FeederRect, t, feeder);
-        wsprintfA(t, magnet ? "Coin magnet ON" : "Coin magnet $%d", Price(MagnetPrice)); Pill(g, MagnetRect, t, magnet);
         int timer = at<int>(b, Board_mAlienTimer);
-        if (alarm && !HasAliens(b) && timer > 0 && timer * 28 <= 30000) wsprintfA(t, "Alien in %ds", timer * 28 / 1000);
-        else wsprintfA(t, alarm ? "Alien alarm ON" : "Alien alarm $%d", Price(AlarmPrice));
-        Pill(g, AlarmRect, t, alarm);
+        bool countdown = alarm && !HasAliens(b) && timer > 0 && timer * 28 <= 30000;
+        ui::Button(api, g, GadgetsBtn, "Other Gadgets", ui::Look::Main, true, gadgetsShown);
+        if (!gadgetsShown)
+        {   // the alarm's warning still shows while the others are hidden
+            if (countdown) { wsprintfA(t, "Alien in %ds", timer * 28 / 1000); Pill(g, AlarmRect, t, true); }
+        }
+        else
+        {
+            auto price = [](const char* what, int p) { return std::string(what) + " $" + ui::Thousands(p); };
+            snprintf(t, sizeof t, "%s", feeder ? "Auto-feeder: on" : price("Auto-feeder", Price(FeederPrice)).c_str()); Pill(g, FeederRect, t, feeder);
+            snprintf(t, sizeof t, "%s", magnet ? "Coin magnet: on" : price("Coin magnet", Price(MagnetPrice)).c_str()); Pill(g, MagnetRect, t, magnet);
+            if (countdown) wsprintfA(t, "Alien in %ds", timer * 28 / 1000);
+            else snprintf(t, sizeof t, "%s", alarm ? "Alien alarm: on" : price("Alien alarm", Price(AlarmPrice)).c_str());
+            Pill(g, AlarmRect, t, alarm);
+        }
     }
     if (clear && eventKind == EvLightsOut && eventLeft > 0)
     {
@@ -515,7 +543,7 @@ extern "C" __declspec(dllexport) const char* RemodDescribe() { return "15 option
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {
-    if (a->version < 2) return 0;
+    if (a->version < 3) return 0;
     api = a;
     goldenOdds = std::max(1, api->config_int("mutators", "goldenodds", 50));   // for testing
     bool ok = api->hook((void*)Board_InitLevel, (void*)&InitLevel, (void**)&oInitLevel)
@@ -538,5 +566,6 @@ extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
     api->on_tick(Tick);
     api->on_overlay(Overlay);
     api->on_mouse(Mouse);
+    api->on_key(Key);
     return 1;
 }

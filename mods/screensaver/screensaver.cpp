@@ -74,7 +74,7 @@ static void Overlay(void*)
     if (ms < 0) return;
     unsigned code = endCode;
     api->log("screensaver: ended after %d s (exit code 0x%x)", ms / 1000, code);
-    if (code >= 0xc0000000u) api->toast("The screensaver crashed (see mods\\remastered-mod.log)");
+    if (code >= 0xc0000000u) api->toast("The screensaver crashed (see remastered-mod.log in the mods folder)");
     else if (ms < 3000) api->toast("The screensaver closed straight away");
 }
 
@@ -85,7 +85,7 @@ static int Key(int vk, int down)
     return 1;
 }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Your Virtual Tank as the game's screensaver: Open here, or F11 on the main menu."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Your Virtual Tank as the game's screensaver: Open here, or its key on the main menu."; }
 extern "C" __declspec(dllexport) void RemodOpen() { Start(); }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)

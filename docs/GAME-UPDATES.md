@@ -77,7 +77,8 @@ Several mods hook the same function (e.g. `Board_BuyItem`, `Coin_MouseDown`); th
    - *Data addresses outside the image:* the layout changed a lot; treat it as a new port of every address.
 4. **Rebuild and test:** `./build.sh --tests`, then the headless runs in DEVELOPING.md ("Testing without Windows"),
    with `GAME=<a copy of the updated game>`: title, a level, the settings page, each mod's feature (testkit keys help:
-   F9/K starve, F11 coins, B buy a guppy, E egg pieces, M money). Add the new hash to the README's supported list.
+   F9/K starve, F10 shells, F11 coins, B buy a guppy, E egg piece, M money; the full list in DEVELOPING.md's layout).
+   Add the new hash to `include/game.h` (and list the supported builds in the README once there is more than one).
 5. **Record the new signatures:** `tools/check-game.py --update popcapgame1.exe`, and commit `game.h` and
    `tools/signatures.txt` together.
 6. **Supporting both builds** (players who don't update, e.g. the classic exe): `game.h` would become one address

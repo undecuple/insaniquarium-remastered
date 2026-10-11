@@ -44,7 +44,8 @@ typedef struct RemodApi {
     /* callbacks */
     void (*on_tick)(void (*cb)(void* board));                 /* after every game update in a tank (Board::Update, 28 ms) */
     void (*on_draw)(void (*cb)(void* board, void* graphics)); /* after the tank is drawn (Board::Draw), under fish and coins */
-    void (*on_key)(int (*cb)(int vk, int down));              /* key presses while the game has focus; return 1 = handled */
+    /* keys while the game has focus: presses (down=1, no auto-repeats) and releases (down=0); return 1 = handled */
+    void (*on_key)(int (*cb)(int vk, int down));
 
     /* game state */
     void* (*app)(void);                   /* the WinFishApp (gApp) */
@@ -58,7 +59,7 @@ typedef struct RemodApi {
     /* settings from mods/remastered-mod.ini: [section] key=value */
     int (*config_int)(const char* section, const char* key, int def);   /* read each time: changes apply at once */
 
-    /* show a line of text over the game for a few seconds (every screen) */
+    /* a short message: in a tank (not in co-op) on the game's own message line, else in a box for 3 s */
     void (*toast)(const char* text);
 
     /* drawn on top of everything, on every screen, after the game has drawn a frame */
@@ -74,7 +75,7 @@ typedef struct RemodApi {
     void (*mouse_pos)(int* x, int* y);
     /* play one of the game's sounds by resource id (SOUND_BUY = 273...; only while a tank is open) */
     void (*play_sound)(int resource_id);
-    /* a text setting from mods/remastered-mod.ini; copies at most size-1 characters into out */
+    /* a text setting from mods/remastered-mod.ini, blanks trimmed at both ends; copies at most size-1 characters into out */
     void (*config_string)(const char* section, const char* key, const char* def, char* out, int size);
 
     /* ---- version 3 ---- */

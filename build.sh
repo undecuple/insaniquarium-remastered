@@ -68,7 +68,7 @@ echo "built $O/ddraw.dll"
 
 TESTS=0
 if [ "${1:-}" = "--tests" ]; then TESTS=1; shift; fi
-[ $# -gt 0 ] || rm -f $O/mods/*.dll   # a full build: no leftovers from mods that were removed
+[ $# -gt 0 ] || rm -rf $O/mods/*.dll "${O:?}/mods/coop"   # a full build: no leftovers from mods that were removed (or an old steam_api.dll)
 for d in mods/*/; do
   m=$(basename $d)
   [ $# -gt 0 ] && [[ " $* " != *" $m "* ]] && continue

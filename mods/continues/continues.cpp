@@ -37,8 +37,8 @@ static void __fastcall DialogHook(void* app, void*, int id, bool modal, const Ms
     if (On() && id == 0x11 && b && at<int>(b, Board_mTank) != 5 && shells && *shells >= Cost() && !at<bool>(app, App_mIsScreenSaver))
     {
         static char text[200];
-        snprintf(text, sizeof text, "All of your fish have died! Spend %d shells to get two guppies and keep going? (You have %d.)",
-                 Cost(), *shells);
+        snprintf(text, sizeof text, "All of your fish have died! Spend %s Shells to get two guppies and keep going? (You have %s.)",
+                 ui::Thousands(Cost()).c_str(), ui::Thousands(*shells).c_str());
         MsvcString header = MakeString("GAME OVER"), lines = MakeString(text), footer = MakeString("");
         origDialog(app, DialogId, modal, &header, &lines, &footer, 1);   // 1 = Yes / No
         return;

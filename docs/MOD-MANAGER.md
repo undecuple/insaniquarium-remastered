@@ -6,7 +6,7 @@ Insaniquarium - Remastered Mod has a mod manager built in: the **Mods** page. Pl
 
 - **its name**: the DLL's file name without `.dll` (`mods\fishcam.dll` → `fishcam`);
 - **a checkbox** to switch it off or on. This writes `[mods] fishcam=0` or `1` to `mods\remastered-mod.ini` and takes
-  effect when the game restarts. Once anything differs from what's running, a **Restart the game now** button appears;
+  effect when the game restarts. Once anything differs from what's running, a **Restart the Game Now** button appears;
 - **its state**: *on*, *off*, *on/off after restart*, *didn't start (see the log)* (its `RemodInit` returned 0),
   *crashed: off until restart*, or *not a mod* (a DLL without `RemodInit`);
 - **its description**, shown under the list while the pointer is over the row;
@@ -34,7 +34,7 @@ __declspec(dllexport) void RemodOpen(void) { OpenMyScreen(); }
 
 Both exports are in the examples: [`examples/hello`](../examples/hello/hello.cpp) (Open switches its tag) and
 [`examples/template`](../examples/template/template.cpp) (Open shows its totals). Among the shipped mods, `coop`,
-`achievements` and `extramodes` open their screens from it.
+`achievements`, `extramodes` and `screensaver` (starts it) use it.
 
 ## Settings of your own
 

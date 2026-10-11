@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below and keep the MIT licence notice with any copied code."
+title: "Insaniquarium - Remastered Mod"
+type: software
+authors:
+  - alias: undecuple
+repository-code: "https://github.com/undecuple/insaniquarium-remastered"
+url: "https://github.com/undecuple/insaniquarium-remastered"
+license: MIT
+abstract: >-
+  Mods for the official Insaniquarium! Deluxe (Steam, version 1.1): a ddraw.dll proxy loader with a hooking framework
+  and a C mod API, plus mods for online co-op (lockstep, through a self-hosted Nakama server or Steam), extra modes,
+  achievements, mutators and window choices. Contains no game code or data.
+keywords:
+  - game modding
+  - Insaniquarium
+  - PopCap
+  - DLL injection
+  - lockstep multiplayer
+  - game preservation

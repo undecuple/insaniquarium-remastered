@@ -10,7 +10,7 @@
 #include <vector>
 
 namespace online {
-struct Lobby { std::string code, name; int members; };
+struct Lobby { std::string code, name; int members; std::string version, tag; };   // version: the host's mod version ("" before 0.3.0)
 struct Events
 {
     void (*created)(const std::string& code);   // our game is up (host)

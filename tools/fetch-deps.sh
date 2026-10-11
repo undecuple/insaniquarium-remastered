@@ -8,7 +8,7 @@ MINHOOK_VERSION=v1.3.4
 D=third_party/minhook
 if [ "$(cat $D/.version 2>/dev/null)" != "$MINHOOK_VERSION" ]; then
   rm -rf "${D:?}" && mkdir -p $D
-  curl -sSL "https://github.com/TsudaKageyu/minhook/archive/refs/tags/$MINHOOK_VERSION.tar.gz" | tar -xz -C $D --strip-components=1
+  curl -sSLf "https://github.com/TsudaKageyu/minhook/archive/refs/tags/$MINHOOK_VERSION.tar.gz" | tar -xz -C $D --strip-components=1
   echo "$MINHOOK_VERSION" > $D/.version
   echo "minhook $MINHOOK_VERSION"
 fi
@@ -20,7 +20,7 @@ STEAMWORKS_NET_VERSION=2025.164.1
 S=third_party/steamworks
 if [ "$(cat $S/.version 2>/dev/null)" != "$STEAMWORKS_NET_VERSION" ]; then
   rm -rf "${S:?}" && mkdir -p $S
-  if curl -sSL -o $S/sw.zip "https://github.com/rlabrecque/Steamworks.NET/releases/download/$STEAMWORKS_NET_VERSION/Steamworks.NET-Standalone_$STEAMWORKS_NET_VERSION.zip"; then
+  if curl -sSLf -o $S/sw.zip "https://github.com/rlabrecque/Steamworks.NET/releases/download/$STEAMWORKS_NET_VERSION/Steamworks.NET-Standalone_$STEAMWORKS_NET_VERSION.zip"; then
     python3 - $S/sw.zip $S <<'PY'
 import sys, zipfile
 z = zipfile.ZipFile(sys.argv[1])

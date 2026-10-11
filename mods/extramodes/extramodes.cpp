@@ -192,7 +192,7 @@ static void __fastcall StartLevel(void* b, void*)
     else if (mode == Daily)
     {
         auto describe = Export<const char* (*)(int)>("mutators.dll", "MutatorsDescribe");
-        std::string t = std::string("Daily challenge: ") + (describe ? describe(Mutators()) : "");
+        std::string t = std::string("Daily Challenge: ") + (describe ? describe(Mutators()) : "");
         api->toast(t.c_str());
     }
 }
@@ -223,7 +223,7 @@ static void __fastcall BuyItem(void* b, void*, int item)
 static void EndDialog(const char* header, const char* text)
 {
     void* a = App();
-    MsvcString h = MakeString(header), l = MakeString(text), f = MakeString("Click to Continue");
+    MsvcString h = MakeString(header), l = MakeString(text), f = MakeString("CLICK TO CONTINUE");
     void** vt = *reinterpret_cast<void***>(a);
     void* d = reinterpret_cast<void*(__thiscall*)(void*, int, bool, const MsvcString*, const MsvcString*, const MsvcString*, int)>(vt[App_vDoDialog / 4])(a, 0x11, true, &h, &l, &f, 3);
     if (d) reinterpret_cast<void(__thiscall*)(void*, int)>((*reinterpret_cast<void***>(d))[0x130 / 4])(d, 30);   // buttons off for 30 ticks
@@ -260,7 +260,7 @@ static void __fastcall Bank(void* b, void*)
             long long best = Record(k);
             if (best <= 0 || secs < best) SetRecord(k, secs);
             Achievement("daily");
-            api->toast(("Daily challenge done in " + Clock(secs) + (best <= 0 || secs < best ? " - your best today!" : "")).c_str());
+            api->toast(("Daily Challenge done in " + Clock(secs) + (best <= 0 || secs < best ? ". Your best today!" : "")).c_str());
         }
         if (CountsAsHard()) AddFame("hardch" + std::to_string(at<int>(b, Board_mTank)), ProfileName(), secs, false);
     }
@@ -343,13 +343,13 @@ static std::vector<Row> Rows()
     int key = Today();
     auto describe = Export<const char* (*)(int)>("mutators.dll", "MutatorsDescribe");
     long long daily = Record("daily_" + std::to_string(key)), boss = Record("bossrush_best"), endless = Record("endless_best");
-    r.push_back({ "Daily Challenge", "Today: tank " + std::to_string(DailyTank(key)) + " against the clock, with " + (describe ? describe(DailyMutators(key)) : "two mutators"),
+    r.push_back({ "Daily Challenge", "Tank " + std::to_string(DailyTank(key)) + " against the clock: " + (describe ? describe(DailyMutators(key)) : "two mutators"),
                   daily > 0 ? "Today's best " + Clock(daily) : "Not played today", 1 });
-    r.push_back({ "Boss Rush", "Every alien in turn, each tougher than the last. $3,000 and a better laser to start.", boss > 0 ? "Best " + Clock(boss) : "No clear yet", 2 });
+    r.push_back({ "Boss Rush", "Every alien in turn, each one tougher. You start with $3,000.", boss > 0 ? "Best " + Clock(boss) : "No clear yet", 2 });
     r.push_back({ "Endless", "Alien waves never stop, sooner and tougher each time.", endless > 0 ? "Best " + std::to_string(endless) + " waves" : "No run yet", 3 });
     if (Export<void (*)()>("sandbox.dll", "SandboxStart")) r.push_back({ "Sandbox", "Build your own tank: place fish, pets and aliens, save layouts.", "", 4 });
     if (Export<void (*)()>("alienplay.dll", "AlienPlayStart")) r.push_back({ "Play as Alien", "The tables turned: steer the alien and empty the tank.", "", 5 });
-    r.push_back({ "Records", "Your bests and the Hall of Fame for Hard mode and Endless.", "", 6 });
+    r.push_back({ "Records", "Your bests and the Hall of Fame for Hard Mode and Endless.", "", 6 });
     return r;
 }
 static RECT RowRect(int i) { return { CX, DY + 72 + i * 47, CX + CW, DY + 72 + i * 47 + 44 }; }
@@ -384,6 +384,8 @@ static void Choose(int action)
     }
 }
 
+static RECT RecordsTab(int i) { return { CX + i * (CW / 3), ui::TabY, CX + (i + 1) * (CW / 3) - 4, ui::TabY + ui::TabH }; }
+
 static int Mouse(int x, int y, int button, int down)
 {
     if (!screen)
@@ -397,12 +399,12 @@ static int Mouse(int x, int y, int button, int down)
         if (screen == MenuId)
         {
             auto rows = Rows();
-            for (size_t i = 0; i < rows.size(); i++) if (ui::In(RowRect((int)i), x, y)) { Choose(rows[i].action); return 1; }
+            for (size_t i = 0; i < rows.size(); i++) if (ui::In(RowRect((int)i), x, y)) { ui::Click(api); Choose(rows[i].action); return 1; }
         }
         else
         {
             for (int i = 0; i < 3; i++)
-                if (ui::In(RECT{ CX + i * (CW / 3), DY + 74, CX + (i + 1) * (CW / 3) - 6, DY + 100 }, x, y)) { recordsPage = i; api->redraw(); }
+                if (ui::In(RecordsTab(i), x, y)) { if (recordsPage != i) ui::Click(api); recordsPage = i; api->redraw(); }
         }
     }
     return 1;
@@ -410,7 +412,7 @@ static int Mouse(int x, int y, int button, int down)
 
 static void DrawMenu(void* g)
 {
-    void* f12 = ui::Font(FONT_JUNGLEFEVER12OUTLINE), *f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE);
+    void* f12 = ui::F12(), *f10 = ui::F10();
     int mx, my;
     api->mouse_pos(&mx, &my);
     auto rows = Rows();
@@ -431,7 +433,7 @@ static void DrawMenu(void* g)
         if (!rows[i].best.empty())
         {
             ui::FitText(api, g, f10, rows[i].line, tx, r.top + 18, tw, ui::White);
-            ui::FitText(api, g, f10, rows[i].best, tx, r.top + 34, tw, 0xff9cf09c);
+            ui::FitText(api, g, f10, rows[i].best, tx, r.top + 34, tw, ui::Green);
         }
         else ui::WrapText(api, g, f10, rows[i].line, tx, r.top + 18, tw, ui::White, 2);
     }
@@ -439,62 +441,66 @@ static void DrawMenu(void* g)
 
 static void DrawRecords(void* g)
 {
-    void* f12 = ui::Font(FONT_JUNGLEFEVER12OUTLINE), *f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE);
-    const char* tabs[3] = { "Your bests", "Hard mode", "Endless" };
-    for (int i = 0; i < 3; i++) ui::Button(api, g, RECT{ CX + i * (CW / 3), DY + 72, CX + (i + 1) * (CW / 3) - 6, DY + 101 }, tabs[i], ui::Look::Main, true, i == recordsPage);
+    void* f12 = ui::F12(), *f10 = ui::F10();
+    const char* tabs[3] = { "Your Bests", "Hard Mode", "Endless" };
+    for (int i = 0; i < 3; i++) ui::Button(api, g, RecordsTab(i), tabs[i], ui::Look::Main, true, i == recordsPage);
     int y = DY + 128;
     LoadFame();
-    auto line = [&](const std::string& a, const std::string& b, unsigned col = 0xffffffff) {
+    auto line = [&](const std::string& a, const std::string& b, unsigned col = ui::White) {
         api->draw_text_font(g, f12, a.c_str(), CX + 10, y, col);
         api->draw_text_font(g, f12, b.c_str(), CX + CW - 10 - api->text_width_font(f12, b.c_str()), y, col);
         y += 24;
     };
-    auto table = [&](const std::string& t, bool money, bool time) {
+    // a Hall of Fame table between x0 and x1: "1. name" on the left, the value on the right
+    auto table = [&](const std::string& t, bool money, bool time, int x0 = CX + 30, int x1 = CX + CW - 10) {
         int n = 0;
         for (auto& e : fame)
             if (e.table == t)
             {
                 n++;
-                std::string v = time ? Clock(e.value) : money ? "$" + std::to_string(e.value) : std::to_string(e.value) + " waves";
-                api->draw_text_font(g, f10, (std::to_string(n) + ". " + e.name).c_str(), CX + 30, y, 0xffffffff);
-                api->draw_text_font(g, f10, v.c_str(), CX + CW - 10 - api->text_width_font(f10, v.c_str()), y, 0xffffe8a0);
+                std::string v = time ? Clock(e.value) : money ? "$" + ui::Thousands(e.value) : std::to_string(e.value) + " waves";
+                int vw = api->text_width_font(f10, v.c_str());
+                ui::FitText(api, g, f10, std::to_string(n) + ". " + e.name, x0, y, x1 - x0 - vw - 8, ui::White);
+                api->draw_text_font(g, f10, v.c_str(), x1 - vw, y, ui::MenuSub);
                 y += 16;
             }
-        if (!n) { api->draw_text_font(g, f10, "-", CX + 30, y, 0xffc0c0c0); y += 16; }
+        if (!n) { api->draw_text_font(g, f10, "-", x0, y, 0xffc0c0c0); y += 16; }
     };
     if (recordsPage == 0)
     {
         long long d = Record("daily_" + std::to_string(Today())), b = Record("bossrush_best"), e = Record("endless_best");
-        line("Daily challenge today", d > 0 ? Clock(d) : "-");
-        line("Boss rush", b > 0 ? Clock(b) : "-");
+        line("Daily Challenge today", d > 0 ? Clock(d) : "-");
+        line("Boss Rush", b > 0 ? Clock(b) : "-");
         line("Endless", e > 0 ? std::to_string(e) + " waves" : "-");
         int days = 0;
         for (auto& r : records) if (r.first.rfind("daily_", 0) == 0) days++;
-        line("Daily challenges finished", std::to_string(days));
+        line("Daily Challenges finished", std::to_string(days));
     }
     else if (recordsPage == 1)
     {
-        api->draw_text_font(g, f10, "Games with the Hard mode mutator (not with Rich start, not boss rush).", CX + 10, y, 0xffffe8a0);
+        api->draw_text_font(g, f10, "Hard Mode mutator games (not with Rich Start or Boss Rush).", CX + 10, y, ui::White);
         y += 22;
         for (int t = 1; t <= 4; t++)
-        {
-            api->draw_text_font(g, f12, ("Tank " + std::to_string(t) + ": Time Trial money / Challenge time").c_str(), CX + 10, y, 0xfffff000);
+        {   // Time Trial on the left, Challenge on the right
+            std::string tank = "Tank " + std::to_string(t);
+            api->draw_text_font(g, f12, (tank + ": Time Trial").c_str(), CX + 10, y, ui::Gold);
+            api->draw_text_font(g, f12, (tank + ": Challenge").c_str(), CX + CW / 2 + 10, y, ui::Gold);
             y += 18;
             int y0 = y;
-            table("hardtt" + std::to_string(t), true, false);
+            table("hardtt" + std::to_string(t), true, false, CX + 10, CX + CW / 2 - 10);
             int y1 = y; y = y0;
-            table("hardch" + std::to_string(t), false, true);
+            table("hardch" + std::to_string(t), false, true, CX + CW / 2 + 10, CX + CW - 10);
             y = std::max(y, y1) + 4;
             if (y > DY + DH - 90) break;
         }
     }
     else
     {
-        api->draw_text_font(g, f12, "Endless: most waves survived", CX + 10, y, 0xfffff000);
+        api->draw_text_font(g, f12, "Endless: most waves survived", CX + 10, y, ui::Gold);
         y += 20;
         table("endless", false, false);
         y += 10;
-        api->draw_text_font(g, f12, "Boss rush: fastest clears", CX + 10, y, 0xfffff000);
+        api->draw_text_font(g, f12, "Boss Rush: fastest clears", CX + 10, y, ui::Gold);
         y += 20;
         table("bossrush", false, true);
     }
@@ -516,9 +522,9 @@ static void Overlay(void* g)
     {
         bool aliens = Count(b, Board_mAliens) > 0 || Count(b, Board_mBilaterus) > 0;
         char s[64];
-        if (mode == Endless) snprintf(s, sizeof s, aliens ? "Endless - wave %d" : "Endless - wave %d in %d s", aliens ? wave : wave + 1, at<int>(b, Board_mAlienTimer) * 28 / 1000);
-        else snprintf(s, sizeof s, "Boss rush - %d / %d", std::min(stage + (aliens ? 1 : 0), Stages), Stages);
-        void* f = ui::Font(FONT_JUNGLEFEVER12OUTLINE);
+        if (mode == Endless) snprintf(s, sizeof s, aliens ? "Endless: wave %d" : "Endless: wave %d in %d s", aliens ? wave : wave + 1, at<int>(b, Board_mAlienTimer) * 28 / 1000);
+        else snprintf(s, sizeof s, "Boss Rush: %d / %d", std::min(stage + (aliens ? 1 : 0), Stages), Stages);
+        void* f = ui::F12();
         int w = api->text_width_font(f, s) + 14;
         api->fill_rect(g, 632 - w, 76, w, 20, 0x90000000);
         api->draw_text_font(g, f, s, 639 - w, 91, aliens ? 0xffff9c9c : 0xffffe880);
@@ -532,7 +538,7 @@ extern "C" __declspec(dllexport) void RecordsOpen() { recordsFromMenu = false; O
 
 extern "C" __declspec(dllexport) int ModeActive() { return Active() ? 1 : 0; }   // for the content mod
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Extra Modes on the main menu: daily challenge, boss rush, endless, records."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Extra Modes on the main menu: Daily Challenge, Boss Rush, Endless, Records."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

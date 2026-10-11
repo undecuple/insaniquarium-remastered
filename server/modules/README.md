@@ -11,12 +11,13 @@ tidy:
   `PUT /v2/account` refuses bad usernames and avatar URLs.
 
 `chatlog.lua` (included, optional) writes every co-op chat line to Nakama's log (`remod_chat`) for moderation; it hooks
-`MatchDataSend`, so no other loaded module may hook that message. See *Running it* in the server guide.
+`MatchDataSend`, so no other loaded module may hook that message. See *Running it* in [../../docs/SERVER.md](../../docs/SERVER.md#running-it).
 
 `cleanup.lua` (included) adds `remod_cleanup`, an RPC for the server's owner that removes accounts older than a number of
 days and listings left behind: see *Running it* in [../../docs/SERVER.md](../../docs/SERVER.md). It registers no hooks,
 so it works next to `wordfilter.lua`.
 
-`wordfilter.lua` is the public server's module (its word lists and the hooks above). Put it here and restart the
+`wordfilter.lua` is the public server's own module (its word lists and the hooks above); it isn't published here. A
+module of your own that does the same goes here too: put it here and restart the
 server (`docker compose up -d --force-recreate nakama`); the log then says it was loaded. Without it the server works
 the same, just without these rules: fine for a group of friends.

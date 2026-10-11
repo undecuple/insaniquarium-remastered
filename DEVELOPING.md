@@ -66,7 +66,7 @@ prefix's ProgramData like `install-steam.sh` does)
 keeps the game's own setting): fullscreen under Proton is a scaled fake mode where headless input doesn't work.
 Under Proton in Xvfb, mouse presses also never reach the borderless window (a window exactly the size of the screen;
 motion arrives, presses don't; on a real desktop it works), and the Steam release may not start at all: keep Proton runs
-at `window=normal` (the default), or use `REALDISPLAY=:0` to run on your own screen instead of a hidden one (the window
+at `window=normal` (set by the runner), or use `REALDISPLAY=:0` to run on your own screen instead of a hidden one (the window
 shows and takes the focus; sound stays off). `DIST=FOLDER` installs another build than `build/dist` (e.g. an unpacked
 release, for a clean-install test); `WM=/path/to/openbox` runs a window manager in the hidden display (needed to see the
 Large window's frame and placement).
@@ -85,7 +85,7 @@ static void Overlay(void* g) { if (api->board()) api->draw_text(g, "Hello", 10, 
 __declspec(dllexport) const char* RemodDescribe(void) { return "Says hello in the corner of the tank."; }
 __declspec(dllexport) int RemodInit(const RemodApi* a)
 {
-    if (a->version < REMOD_API_VERSION) return 0;   // or check only the version your mod needs
+    if (a->version < 1) return 0;   // the oldest API version this mod needs (newer cores run it too)
     api = a;
     api->on_overlay(Overlay);
     return 1;
@@ -99,7 +99,7 @@ one to `mods/<name>/<name>.cpp` (the file name is the mod's name) and run `./bui
 files go*). Your mod's settings go in `mods\remastered-mod.ini` under `[<name>]`; a section that isn't there yet reads
 as the defaults you pass, and `config_set` adds it.
 
-**The API** (`include/remod.h`, plain C; every function lists the version that added it):
+**The API** (`include/remod.h`, plain C; every function after version 1 says the version that added it):
 
 | Group | Functions |
 |---|---|
@@ -108,7 +108,7 @@ as the defaults you pass, and `config_set` adds it.
 | Drawing | `fill_rect`, `draw_text`, `draw_text_font`, `text_width(_font)`, `draw_image`, `draw_image_part`, `draw_image_scaled`, `redraw` (after your overlay changes), `capture_frame` |
 | Game functions | `hook(target, detour, &original)` (MinHook; several mods can hook the same function), `play_sound` |
 | Settings | `config_int`, `config_string`, `config_set`, `config_changed` |
-| Messages | `toast`, `log` (to `mods\remastered-mod.log`) |
+| Messages | `toast` (in a tank: the game's own message line), `log` (to `mods\remastered-mod.log`) |
 | Mods | `mod_list` (every DLL in `mods\` with its state and description), `restart` |
 | Co-op | `set_input_filter`, `inject_input` (used by `coop`; see *Mods and co-op*) |
 
@@ -132,8 +132,15 @@ button there): [docs/MOD-MANAGER.md](docs/MOD-MANAGER.md).
 **Game objects and functions:** pointers to game objects are opaque in the API; `include/game.h` has the addresses of
 game functions, field offsets and resource globals that the shipped mods use (all from reverse-engineering the 1.1 exe;
 read `game::at<T>(object, offset)` to access a field). `include/remodui.h` draws the mod's UI in the game's own look
-(buttons, edit boxes, checkboxes, tooltips, dialogs) and has small helpers (`ui::OnMainMenu`, `ui::DialogCount`,
-`ui::CoopPlaying`, `ui::Has`/`ui::Call` for another mod's exports). Game methods are `__thiscall`: hook them with a
+(buttons, edit boxes, tooltips, dialogs) and has small helpers (`ui::OnMainMenu`, `ui::DialogCount`,
+`ui::CoopPlaying`, `ui::Has`/`ui::Call` for another mod's exports, `ui::Thousands`, `ui::KeyName`). New screens should
+look like the game's own (they use its images and fonts; the values come from WinFish's dialogs):
+- a dialog of 580x440 (`ui::DlgX`... ), its header and footer in capitals (`OK`, `CLOSE`, `CANCEL`, `BACK`); tabs as
+  `Look::Main` strips at `ui::TabY`; buttons inside a dialog `Look::Dialog` (white labels), primary actions
+  `Look::Main`; `ui::Click(api)` on every button press (not on checkboxes, as the game);
+- labels and buttons in Title Case ("Hover to Collect"), hints and messages as sentences; checkbox labels F10 white,
+  43 px right of the checkbox; headings `ui::Gold`, body text white; numbers as `1,000`; "Shells" as the game writes it;
+- the game's fonts have no `\`, `|` or `…`: write "...", and name folders in words. Game methods are `__thiscall`: hook them with a
 `__fastcall(this, edx, args...)` detour and call the original through a `__thiscall` pointer (see `timecontrol`'s
 `Board::Pause` hook). Before hooking a function not in `game.h`, read its disassembly (Ghidra, or
 `objdump -d -M intel --start-address=...` on the exe): some use other conventions (`WidgetManager::DrawScreen` takes
@@ -199,7 +206,8 @@ core/display.cpp       the large window ([display]: DirectDraw primary-surface B
 loader/ddraw.exports   the DirectDraw exports the proxy forwards
 mods/<name>/           one folder per mod
 tests/<name>/          test-only mods (crashtest; testkit: F9 starve every fish, F10 +5000 shells and level 1-2, F11
-                       six coins; K starve one guppy; C click the first corpse; F feed the first guppy while full; B buy a guppy), built by `build.sh --tests`, installed by `TESTMODS=1 run-wine.sh`
+                       six coins; K starve one guppy; C click the first corpse; F feed the first guppy while full; B buy a guppy;
+                       M +$10000; E buy an egg piece; R determinism probe), built by `build.sh --tests`, installed by `TESTMODS=1 run-wine.sh`
 examples/<name>/       example mods for authors (hello, template), built by `build.sh --tests`; never released
 tools/                 fetch-deps.sh (MinHook), gen-proxy.py (export stubs), run-wine.sh (tests), install-steam.sh,
                        package.sh (release zip), release-notes.sh, ci-setup.sh (CI build tools),

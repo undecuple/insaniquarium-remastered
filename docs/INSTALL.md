@@ -83,7 +83,7 @@ and start it again.
   achievements, settings, the list of mods). Settings also open with **F2**.
 - **Your saves** are copied once to `userdata-before-remastered-mod` (next to the game's `userdata`; for the Steam
   release that's `C:\ProgramData\Steam\Insaniquarium`) before the mod changes anything.
-- **Keys:** **F2** → Keys: click a key to change it; right-click or **Reset all keys** for the defaults.
+- **Keys:** **F2** → Keys: click a key to change it; right-click or **Reset All Keys** for the defaults.
 - **The window:** the game opens in a large window (as big as your screen allows, sharp, resizable). To change it:
   **F2** → Display → Window: **640x480** (the game's own small window) or **Borderless** (fills the screen); it
   changes at once. The game's own Fullscreen box in Options (or Alt+Enter) switches to Borderless and back.
@@ -92,18 +92,18 @@ and start it again.
 - **Playing without mods for once:** hold **Shift** while the game starts.
 
 ### Co-op
-- **In a game and its lobby:** **Enter** opens a chat line that only the players in that game see (Enter sends, Esc
-  drops; lines fade after 10 seconds; the key can be changed on the Keys tab); a **middle click** shows everyone where you point. Only the host changes the speed and
-  the rules (mutators): the guests' games follow.
 - **Online (the default):** nothing to set up. The co-op screen's **Online** tab uses the mod's public server: host a
-  listed or private game, or join one from the list or with its room code.
+  **Public Match** or a **Private Match**, or join one from the list or with its room code.
+- **In a game and its lobby:** **Enter** opens a chat line that only the players in that game see (Enter sends, Esc
+  drops; lines fade after 10 seconds); a **middle click** shows everyone where you point. Only the host changes the
+  speed and the rules (mutators): the guests' games follow.
 - **Over Steam:** needs Valve's `steam_api.dll`. Usually nothing to do: the mod borrows a copy another Steam game of
   yours already has. If the co-op screen says none was found, put a 32-bit `steam_api.dll` into the game folder's
   `mods\coop\` (for example from the `Windows-x86` folder of a
   [Steamworks.NET standalone release](https://github.com/rlabrecque/Steamworks.NET/releases)).
-- **Through your group's own server:** co-op screen → **Online** → **Server settings**: enter the server's name, port,
-  TLS and key you were given, then **Test connection**. Setting up such a server: [SERVER.md](SERVER.md).
-- **By address:** nothing to install; the host opens TCP port 27615 (or uses a VPN), see the README.
+- **Through your group's own server:** co-op screen → **Server** tab: enter the server's name, port,
+  TLS and key you were given, then **Test Connection** and **Save**. Setting up such a server: [SERVER.md](SERVER.md).
+- **By address:** the co-op screen's **Direct** tab; the host opens TCP port 27615 (or uses a VPN).
 
 ## Updating to a new version
 Close the game, then install the new version the same way, over the old one (let it replace the files), and run the

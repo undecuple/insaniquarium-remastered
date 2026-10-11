@@ -115,7 +115,7 @@ static void Overlay(void* g)
     double sc = scale; bool pz = paused;
     if (Coop()) CoopState(sc, pz);
     if (!pz && sc == 1.0) return;
-    std::string label = pz ? "PAUSED (" + ui::KeyName(kPause) + ")" : sc > 1 ? ">> 2x" : "> 0.75x";
+    std::string label = pz ? "Paused (" + ui::KeyName(kPause) + ")" : sc > 1 ? ">> 2x" : "> 0.75x";
     const char* s = label.c_str();
     int w = api->text_width(s) + 12;
     api->fill_rect(g, 640 - w - 8, 430, w, 20, 0x90000000);
@@ -130,7 +130,7 @@ static void Load()
     kMenu = api->config_int("timecontrol", "menu", VK_SPACE);
 }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Pause with F5, play at 0.75x (F6) or 2x (F8)."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Pause, or play at 0.75x or 2x (keys on the Keys tab)."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

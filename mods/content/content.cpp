@@ -347,7 +347,7 @@ static DWORD WINAPI MyGetFileAttributesA(LPCSTR name)
 static std::string fingerprint = "none";
 extern "C" __declspec(dllexport) const char* ContentFingerprint() { return fingerprint.c_str(); }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Content packs: mods\\<pack>\\assets replaces game files, content\\levels.json changes levels."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Content packs: a pack's assets replace game files; levels.json changes the levels."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

@@ -1,7 +1,7 @@
 // settings: the in-game settings page for Insaniquarium - Remastered Mod (F2 anywhere), and the main menu's second
 // page: a "Remastered" button on the main menu turns the menu's button panel into one for the mod's screens (co-op,
 // extra modes, achievements, settings, what's new, the loaded mods, records), drawn with the game's own buttons.
-// The settings page is one of the game's dialogs (modal; the tank pauses behind it; DONE closes it). Everything it
+// The settings page is one of the game's dialogs (modal; the tank pauses behind it; OK closes it). Everything it
 // changes is written to mods/remastered-mod.ini; most changes apply at once, the ones marked "restart" from the next start.
 #include "remod.h"
 #include "game.h"
@@ -52,49 +52,50 @@ static void Build()
         { "Window", "display", "window", "Large: as big as the screen allows (whole multiples of 640x480), resizable. 640x480: the game's own window. Borderless: fills the screen, black bars at the sides (also the game's own Fullscreen box and Alt+Enter).",
           { { "Large", "native" }, { "640x480", "normal" }, { "Borderless", "borderless" } }, "native", false },
         { "Scaling", "display", "scale", "Fit: as large as the screen allows. Whole multiples: 2x, 3x... only (sharpest pixels, wider bars).",
-          { { "Fit", "fit" }, { "Whole multiples", "integer" } }, "fit", false },
-        { "Frame counter", "fps", "shown", "Frames per second in the top-left corner (F3 shows or hides it).", {}, "0", false },
+          { { "Fit", "fit" }, { "Whole Multiples", "integer" } }, "fit", false },
+        { "Frame Counter", "fps", "shown", "Frames per second in the top-left corner (its key is on the Keys tab).", {}, "0", false },
     };
     tabs[1] = {
         { "Autosave", "autosave", "minutes", "Saves the level in progress and your profile whenever the game pauses, and every few minutes.",
-          { { "On pause", "0" }, { "1 min", "1" }, { "2 min", "2" }, { "5 min", "5" } }, "2", false },
-        { "\"Autosaved\" note", "autosave", "label", "A small note in the corner when the game was saved.", {}, "1", false },
-        { "Continue with shells", "continues", "enabled", "When all your fish die: spend shells (500, then 1,000...) for two guppies and keep going.", {}, "1", false },
-        { "Hover to collect", "hovercoins", "enabled", "Coins are picked up when the pointer passes over them: no need to click.", {}, "1", false },
-        { "Achievement banners", "achievements", "banners", "A banner at the top when you unlock an achievement.", {}, "1", false },
-        { "Hungry-fish marker", "accessibility", "hungry", "A red ! over hungry fish (the game only tints them green).", {}, "1", false },
-        { "Coin values", "accessibility", "coins", "Each coin's value under it, so silver, gold and gems don't rely on colour.", {}, "1", false },
+          { { "On Pause", "0" }, { "1 min", "1" }, { "2 min", "2" }, { "5 min", "5" } }, "2", false },
+        { "\"Autosaved\" Note", "autosave", "label", "A small note in the corner when the game was saved.", {}, "1", false },
+        { "Continue with Shells", "continues", "enabled", "When all your fish die: spend shells (500, then 1,000...) for two guppies and keep going.", {}, "1", false },
+        { "Hover to Collect", "hovercoins", "enabled", "Coins are picked up when the pointer passes over them: no need to click.", {}, "1", false },
+        { "Achievement Banners", "achievements", "banners", "A banner at the top when you unlock an achievement.", {}, "1", false },
+        { "Hungry-Fish Marker", "accessibility", "hungry", "A red ! over hungry fish (the game only tints them green).", {}, "0", false },
+        { "Coin Values", "accessibility", "coins", "Each coin's value under it, so silver, gold and gems don't rely on colour.", {}, "0", false },
     };
     tabs[2] = {
-        { "Hungry fish", "mutators", "hungry", "Fish get hungry twice as fast.", {}, "0", false },
-        { "Double trouble", "mutators", "double", "Every alien arrives with a twin.", {}, "0", false },
-        { "Glass cannon", "mutators", "glass", "Your laser hits twice as hard, but aliens are faster.", {}, "0", false },
-        { "No pets", "mutators", "nopets", "No pets come into the tank.", {}, "0", false },
+        { "Hungry Fish", "mutators", "hungry", "Fish get hungry twice as fast.", {}, "0", false },
+        { "Double Trouble", "mutators", "double", "Every alien arrives with a twin.", {}, "0", false },
+        { "Glass Cannon", "mutators", "glass", "Your laser hits twice as hard, but aliens are faster.", {}, "0", false },
+        { "No Pets", "mutators", "nopets", "No pets come into the tank.", {}, "0", false },
         { "Pacifist", "mutators", "pacifist", "Your laser can't hurt aliens. Pets and food only.", {}, "0", false },
-        { "Heavy coins", "mutators", "heavycoins", "Coins sink faster.", {}, "0", false },
-        { "Tiny wallet", "mutators", "tinywallet", "You can't hold more than $2,500.", {}, "0", false },
-        { "Rich start", "mutators", "richstart", "Start each level with $1,000.", {}, "0", false },
-        { "Hard mode", "mutators", "hard", "Higher prices, tougher aliens that come sooner, hungrier fish.", {}, "0", false },
-        { "Golden guppies", "mutators", "golden", "1 in 50 guppies you buy is golden: coins twice as often.", {}, "0", false },
-        { "Coin combos", "mutators", "combos", "Quick coin pickups build a bonus of up to double value.", {}, "0", false },
-        { "Tank events", "mutators", "events", "Feeding frenzies, power cuts and currents now and then.", {}, "0", false },
+        { "Heavy Coins", "mutators", "heavycoins", "Coins sink faster.", {}, "0", false },
+        { "Tiny Wallet", "mutators", "tinywallet", "You can't hold more than $2,500.", {}, "0", false },
+        { "Rich Start", "mutators", "richstart", "Start each level with $1,000.", {}, "0", false },
+        { "Hard Mode", "mutators", "hard", "Higher prices, tougher aliens that come sooner, hungrier fish.", {}, "0", false },
+        { "Golden Guppies", "mutators", "golden", "1 in 50 guppies you buy is golden: coins twice as often.", {}, "0", false },
+        { "Coin Combos", "mutators", "combos", "Quick coin pickups build a bonus of up to double value.", {}, "0", false },
+        { "Tank Events", "mutators", "events", "Feeding frenzies, power cuts and currents now and then.", {}, "0", false },
         { "Overeating", "mutators", "overeat", "Feeding a full fish stuffs it (no coins for a while); three times and it pops.", {}, "0", false },
         { "Decay", "mutators", "decay", "Dead fish float until you click them away, and make the others hungry.", {}, "0", false },
-        { "Gadgets", "mutators", "gadgets", "Buy an auto-feeder, a coin magnet and an alien alarm in each tank (top left).", {}, "0", false },
+        { "Gadgets", "mutators", "gadgets", "Buy an auto-feeder, a coin magnet and an alien alarm in each tank (the Other Gadgets button, bottom right).", {}, "0", false },
     };
     // keys: Windows key codes in the ini (0 = no key); the value is the key's name, a click waits for a new key
     tabs[KeysTab] = {
-        { "Settings page", "settings", "open_key", "Opens these settings, anywhere.", {}, "113", false },
-        { "Co-op screen", "coop", "open_key", "Opens the co-op screen on the main menu.", {}, "118", false },
-        { "Co-op chat", "coop", "chat_key", "In a co-op game or its lobby: opens a chat line (Enter sends it, Esc drops it). Only the players in that game see it.", {}, "13", false },
+        { "Mod Settings", "settings", "open_key", "Opens these settings, anywhere but in a co-op game.", {}, "113", false },
+        { "Co-op Screen", "coop", "open_key", "Opens the co-op screen on the main menu.", {}, "118", false },
+        { "Co-op Chat", "coop", "chat_key", "In a co-op game or its lobby: opens a chat line (Enter sends it, Esc drops it). Only the players in that game see it.", {}, "13", false },
         { "Achievements", "achievements", "open_key", "Opens the list of achievements.", {}, "115", false },
         { "Screensaver", "screensaver", "key", "Starts the screensaver on the main menu.", {}, "122", false },
         { "Screenshot", "screenshot", "key", "Saves a screenshot in the game folder's screenshots folder.", {}, "123", false },
         { "Pause", "timecontrol", "pause", "Pauses or resumes the tank (in co-op: the host, for everyone).", {}, "116", false },
         { "Slower (0.75x)", "timecontrol", "slow", "Slows the tank down, or back to normal speed.", {}, "117", false },
         { "Faster (2x)", "timecontrol", "fast", "Speeds the tank up, or back to normal speed.", {}, "119", false },
-        { "Frame counter", "fps", "key", "Shows or hides the frame counter.", {}, "114", false },
-        { "Pause menu", "timecontrol", "menu", "The game's own pause dialog in a tank (Space in the original game).", {}, "32", false },
+        { "Frame Counter", "fps", "key", "Shows or hides the frame counter.", {}, "114", false },
+        { "Pause Menu", "timecontrol", "menu", "The game's own pause dialog in a tank (Space in the original game).", {}, "32", false },
+        { "Gadgets", "mutators", "gadgets_key", "Shows or hides the gadgets in a tank (the Gadgets mutator), as the Other Gadgets button does.", {}, "120", false },
     };
     // the loaded-mods screen: every DLL in the mods folder with its state (the core's list)
     static std::vector<std::string> names, descriptions;
@@ -154,7 +155,17 @@ static bool Pending(size_t i)   // a mod's switch differs from what's running: a
 // the Mods tab: a running mod that exports RemodOpen() (its own screen or settings) gets an Open button on its row
 static std::string DllOf(size_t i) { return std::string(tabs[ModsTab][i].label) + ".dll"; }
 static bool CanOpen(size_t i) { return i < modState.size() && modState[i] == REMOD_MOD_ON && ui::Has(DllOf(i).c_str(), "RemodOpen"); }
-static RECT OpenRect(const RECT& r) { int h = (std::min)(28, (int)(r.bottom - r.top) - 4); int y = r.top + ((r.bottom - r.top) - h) / 2; return { r.right - 54, y, r.right, y + h }; }
+static RECT OpenRect(const RECT& r) { int h = (std::min)(28, (int)(r.bottom - r.top) - 4), w = (std::max)(60, ui::ImgW(ui::Image(IMAGE_DIALOGBUTTON)) / 3 / 3 * 2 + 2); int y = r.top + ((r.bottom - r.top) - h) / 2; return { r.right - w, y, r.right, y + h }; }
+// the Mods tab shows each mod by the name its screens use (the DLL's name stays the key in [mods])
+static std::string ShownName(const char* dll)
+{
+    static const char* const Names[][2] = { { "alienplay", "Play as Alien" }, { "coop", "Co-op" }, { "extramodes", "Extra Modes" },
+        { "fps", "Frame Counter" }, { "hovercoins", "Hover to Collect" }, { "timecontrol", "Time Control" }, { "continues", "Continues" } };
+    for (auto& n : Names) if (!strcmp(dll, n[0])) return n[1];
+    std::string s = dll;
+    if (!s.empty()) s[0] = (char)toupper((unsigned char)s[0]);
+    return s;
+}
 static bool AnyPending() { for (size_t i = 0; i < modState.size(); i++) if (Pending(i)) return true; return false; }
 static const char* StateText(size_t i)
 {
@@ -168,7 +179,16 @@ static const char* StateText(size_t i)
         default: return "not a mod";
     }
 }
-static RECT TabRect(int i) { int w = CW / TabCount; return { CX + i * w, TabY, CX + (i + 1) * w - 4, TabY + 29 }; }
+// tabs as wide as their names need, the rest of the row shared out evenly
+static RECT TabRect(int i)
+{
+    // (at least as wide as the button image's two end caps, a third of a cel each: narrower, it can't stretch)
+    int minW = ui::ImgW(ui::Image(IMAGE_MAINBUTTON)) / 3 / 3 * 2 + 2, text[TabCount], sum = 0;
+    for (int j = 0; j < TabCount; j++) sum += text[j] = (std::max)(api->text_width_font(ui::F10(), TabNames[j]) + 16, minW);
+    int extra = (CW - 4 * (TabCount - 1) - sum) / TabCount, x = CX;
+    for (int j = 0; j < i; j++) x += text[j] + extra + 4;
+    return { x, TabY, x + text[i] + extra, TabY + 29 };
+}
 // the value button of a setting with choices: right-aligned in its row, as wide as its text needs
 static RECT ValueRect(const RECT& r, const char* text) { int w = (std::max)(api->text_width_font(ui::F10(), text) + 34, 80); return { r.right - w, r.top + 7, r.right, r.top + 36 }; }
 
@@ -179,7 +199,7 @@ static void Open(int startTab = -1)
     if (open || !App() || ui::DialogCount(api) > 0) return;
     Build();
     if (startTab >= 0) tab = startTab;
-    if (!ui::OpenDialog(api, DialogId, "REMASTERED MOD", "DONE", DX, DY, DW, DH)) return;
+    if (!ui::OpenDialog(api, DialogId, "MOD SETTINGS", "OK", DX, DY, DW, DH)) return;
     open = true;
     needRestart = false;
 }
@@ -227,14 +247,14 @@ extern "C" __declspec(dllexport) void SettingsOpen() { page = false; Open(); }
 
 static void PageClick(int x, int y)
 {
-    auto go = [](const char* dll, const char* fn) { if (ui::Call(dll, fn)) api->play_sound(13); };
+    auto go = [](const char* dll, const char* fn) { if (ui::Call(dll, fn)) ui::Click(api); };
     if (In(Big1, x, y)) go("coop.dll", "CoopOpen");
     else if (In(Mid1, x, y)) go("extramodes.dll", "ExtraModesOpen");
     else if (In(Mid2, x, y)) go("achievements.dll", "AchievementsOpen");
-    else if (In(Big2, x, y)) Open();
-    else if (In(Pill, x, y)) { page = false; api->redraw(); }
-    else if (In(Left, x, y)) Open(AboutTab);
-    else if (In(Center, x, y)) Open(ModsTab);
+    else if (In(Big2, x, y)) { ui::Click(api); Open(); }
+    else if (In(Pill, x, y)) { ui::Click(api); page = false; api->redraw(); }
+    else if (In(Left, x, y)) { ui::Click(api); Open(AboutTab); }
+    else if (In(Center, x, y)) { ui::Click(api); Open(ModsTab); }
     else if (In(Right, x, y)) go("extramodes.dll", "RecordsOpen");
 }
 
@@ -245,7 +265,7 @@ static void DrawPage(void* g)
     ui::MenuButton(api, g, Big1, "Co-op", true, ui::Has("coop.dll", "CoopOpen"), "2-4 players");
     ui::MenuButton(api, g, Mid1, "Extra Modes", false, ui::Has("extramodes.dll", "ExtraModesOpen"));
     ui::MenuButton(api, g, Mid2, "Achievements", false, ui::Has("achievements.dll", "AchievementsOpen"));
-    ui::MenuButton(api, g, Big2, "Mod Settings", true, true, "F2");
+    ui::MenuButton(api, g, Big2, "Mod Settings", true, true, openKey ? ui::KeyName(openKey).c_str() : nullptr);
     ui::Button(api, g, Pill, "Main Menu", ui::Look::Main);
     ui::Button(api, g, Left, "About", ui::Look::Left);
     ui::Button(api, g, Center, "Mods", ui::Look::Center);
@@ -265,11 +285,11 @@ static int Mouse(int x, int y, int button, int down)
             api->redraw();
             return 1;
         }
-        if (down && button == 0 && In(EntryRect, x, y)) { page = true; api->play_sound(13); api->redraw(); return 1; }
+        if (down && button == 0 && In(EntryRect, x, y)) { page = true; ui::Click(api); api->redraw(); return 1; }
         return In(EntryRect, x, y) ? 1 : 0;
     }
     if (!Dialog()) { open = false; return 0; }
-    if (y >= DY + DH - 70) return 0;   // the DONE button belongs to the dialog
+    if (y >= DY + DH - 70) return 0;   // the OK button belongs to the dialog
     if (down && button == 1 && tab == KeysTab)   // right click: that key back to its default
     {
         for (auto& it : tabs[KeysTab])
@@ -279,9 +299,10 @@ static int Mouse(int x, int y, int button, int down)
         return 1;
     }
     if (!down || button != 0) return In(RECT{ DX, DY, DX + DW, DY + DH }, x, y) ? 1 : 0;
-    for (int i = 0; i < TabCount; i++) if (In(TabRect(i), x, y)) { tab = i; hover = -1; capturing = -1; api->redraw(); return 1; }
+    for (int i = 0; i < TabCount; i++) if (In(TabRect(i), x, y)) { if (tab != i) ui::Click(api); tab = i; hover = -1; capturing = -1; api->redraw(); return 1; }
     if (tab == ModsTab && AnyPending() && In(RestartRect(), x, y))
     {
+        ui::Click(api);
         ui::KillDialog(api, DialogId);
         open = false;
         api->config_changed();
@@ -292,6 +313,7 @@ static int Mouse(int x, int y, int button, int down)
         for (size_t i = 0; i < tabs[ModsTab].size(); i++)
             if (CanOpen(i) && In(OpenRect(RowRect(ModsTab, (int)i)), x, y))
             {
+                ui::Click(api);
                 ui::KillDialog(api, DialogId);
                 open = false;
                 std::string dll = DllOf(i);
@@ -305,18 +327,18 @@ static int Mouse(int x, int y, int button, int down)
             for (auto& it : tabs[KeysTab]) api->config_set(it.section, it.key, it.def);
             capturing = -1;
             api->config_changed();
-            api->play_sound(13);
+            ui::Click(api);
             api->redraw();
             return 1;
         }
         for (size_t i = 0; i < tabs[tab].size(); i++)
-            if (In(RowRect(tab, (int)i), x, y)) { capturing = capturing == (int)i ? -1 : (int)i; api->redraw(); return 1; }
+            if (In(RowRect(tab, (int)i), x, y)) { ui::Click(api); capturing = capturing == (int)i ? -1 : (int)i; api->redraw(); return 1; }
         capturing = -1;
         return 1;
     }
     if (tab != AboutTab)
         for (size_t i = 0; i < tabs[tab].size(); i++)
-            if (In(RowRect(tab, (int)i), x, y)) { Toggle(tabs[tab][i]); api->redraw(); return 1; }
+            if (In(RowRect(tab, (int)i), x, y)) { if (!tabs[tab][i].choices.empty()) ui::Click(api); Toggle(tabs[tab][i]); api->redraw(); return 1; }
     return 1;
 }
 
@@ -349,10 +371,11 @@ static void DrawSettings(void* g)
     if (tab == AboutTab)
     {
         int y = TabY + 54;
-        api->draw_text_font(g, f12, "Insaniquarium - Remastered Mod " REMOD_VERSION, CX, y, ui::Yellow);
+        api->draw_text_font(g, f12, "Insaniquarium - Remastered Mod " REMOD_VERSION, CX, y, ui::Gold);
         y = ui::WrapText(api, g, f10, "An unofficial fan mod for Insaniquarium! Deluxe 1.1, not affiliated with PopCap Games or EA.", CX, y + 18, CW, ui::White) + 6;
-        std::string keys = ui::KeyName(openKey) + ": these settings (anywhere).  " +
-                           ui::KeyName(api->config_int("coop", "open_key", VK_F7)) + ": co-op (on the main menu).  Every key: the Keys tab.";
+        int coopKey = api->config_int("coop", "open_key", VK_F7);
+        std::string keys = (openKey ? ui::KeyName(openKey) + ": these settings (anywhere but co-op).  " : "") +
+                           (coopKey ? ui::KeyName(coopKey) + ": co-op (on the main menu).  " : "") + "Every key: the Keys tab.";
         const std::string Lines[] = {
             keys,
             "Hold Shift while the game starts to play without mods this time.",
@@ -360,12 +383,11 @@ static void DrawSettings(void* g)
             "MIT licence. Uses MinHook (BSD-2-Clause). Insaniquarium and its art belong to PopCap Games.",
             "Thanks to WinFish by Vindirect (github.com/Vindirect/WinFish), a decompile of the game that helped identify its code.",
         };
-        for (auto& l : Lines) y = ui::WrapText(api, g, f10, l, CX, y + 4, CW, ui::Cream, 2) + 2;
+        for (auto& l : Lines) y = ui::WrapText(api, g, f10, l, CX, y + 4, CW, ui::White, 2) + 2;
         return;
     }
     const char* help = nullptr;
     void* checked = ui::Image(IMAGE_CHECKED), *unchecked = ui::Image(IMAGE_UNCHECKED);
-    int cols = Columns(tab);
     for (size_t i = 0; i < tabs[tab].size(); i++)
     {
         Setting& it = tabs[tab][i];
@@ -374,7 +396,10 @@ static void DrawSettings(void* g)
         if (over) help = it.help;
         std::string v = Get(it);
         int rh = r.bottom - r.top;
-        int tx = r.left + 6, labelY = tab == ModsTab ? r.top + (rh >= 40 ? 22 : rh / 2 - 1) : tab == KeysTab ? r.top + 25 : r.top + 28, right = r.right;
+        // labels as the game's Options dialog: 43 px right of the checkbox, baseline 24 below its top (value rows line up)
+        int boxTop = r.top + (44 - 46) / 2;
+        int tx = r.left + 43, labelY = tab == ModsTab ? r.top + (rh >= 40 ? 22 : rh / 2 - 1) : tab == KeysTab ? r.top + 23 : boxTop + 24, right = r.right;
+        if (tab == KeysTab) tx = r.left + 6;
         if (tab == KeysTab)
         {
             int vk = atoi(v.c_str());
@@ -384,14 +409,14 @@ static void DrawSettings(void* g)
             std::string shown = capturing == (int)i ? "Press a key..." : ui::KeyName(vk);
             RECT vr = ValueRect(r, shown.c_str());
             OffsetRect(&vr, 0, -3);   // the Keys tab's rows are shorter
-            ui::Button(api, g, vr, shown.c_str(), ui::Look::Center, true, capturing == (int)i);
-            if (clash && capturing != (int)i) { api->draw_text_font(g, f10, "!", vr.left - 12, vr.top + 19, 0xffff6060); if (over) help = "This key is also used by another row: pick a different one."; }
+            ui::Button(api, g, vr, shown.c_str(), ui::Look::Dialog, true, capturing == (int)i);
+            if (clash && capturing != (int)i) { api->draw_text_font(g, f10, "!", vr.left - 12, vr.top + 19, ui::Warn); if (over) help = "This key is also used by another row: pick a different one."; }
             right = vr.left - 14;
         }
         else if (it.choices.empty())
         {
             void* img = v != "0" ? checked : unchecked;
-            if (rh >= 44 || api->version < 7) { api->draw_image(g, img, r.left, r.top + (44 - ui::ImgH(img)) / 2); tx = r.left + ui::ImgW(img) + 4; }
+            if (rh >= 44 || api->version < 7) api->draw_image(g, img, r.left, r.top + (44 - ui::ImgH(img)) / 2);
             else
             {   // a compact row: the game's checkbox drawn smaller
                 float sc = (float)(rh - 2) / ui::ImgH(img);
@@ -404,28 +429,25 @@ static void DrawSettings(void* g)
             const char* shown = it.choices[0].first;
             for (auto& c : it.choices) if (v == c.second) shown = c.first;
             RECT vr = ValueRect(r, shown);
-            ui::Button(api, g, vr, shown, ui::Look::Center);
+            ui::Button(api, g, vr, shown, ui::Look::Dialog);
             right = vr.left - 6;
         }
-        if (tab == ModsTab && CanOpen(i)) { RECT orr = OpenRect(r); ui::Button(api, g, orr, "Open", ui::Look::Center); right = orr.left - 4; }
-        void* font = cols == 3 || tab == ModsTab ? f10 : f12;
-        ui::FitText(api, g, font, it.label, tx, labelY, right - tx, over ? ui::White : ui::Cream);
+        if (tab == ModsTab && CanOpen(i)) { RECT orr = OpenRect(r); ui::Button(api, g, orr, "Open", ui::Look::Dialog); right = orr.left - 4; }
+        ui::FitText(api, g, f10, tab == ModsTab ? ShownName(it.label) : std::string(it.label), tx, labelY, right - tx, ui::White);
         if (tab == ModsTab && i < modState.size())
         {
-            unsigned col = modState[i] == REMOD_MOD_ON && !Pending(i) ? 0xff9cf09c : Pending(i) ? 0xffffe060 : 0xffffb0a0;
+            unsigned col = modState[i] == REMOD_MOD_ON && !Pending(i) ? ui::Green : Pending(i) ? 0xffffe060 : ui::Warn;
             ui::FitText(api, g, f10, StateText(i), tx, labelY + (rh >= 40 ? 14 : 12), right - tx, col);
         }
     }
     if (tab == ModsTab && tabs[ModsTab].empty()) api->draw_text_font(g, f12, "No other mods installed.", CX, TabY + 60, ui::White);
-    if (tab == ModsTab && AnyPending()) ui::Button(api, g, RestartRect(), "Restart the game now", ui::Look::Center);
-    if (tab == KeysTab) ui::Button(api, g, ResetKeysRect(), "Reset all keys", ui::Look::Center);
+    if (tab == ModsTab && AnyPending()) ui::Button(api, g, RestartRect(), "Restart the Game Now", ui::Look::Dialog);
+    if (tab == KeysTab) ui::Button(api, g, ResetKeysRect(), "Reset All Keys", ui::Look::Dialog);
     // the help line for the row under the pointer (wrapped, two lines at most)
     std::string line = help ? help : (tab == 2 ? "Mutators apply from the next level you start."
                                     : tab == ModsTab ? "Click a mod to switch it off or on: it changes when the game restarts. Open: the mod's own screen."
-                                    : tab == KeysTab ? (capturing >= 0 ? "Press the new key. Esc: keep the old one. Backspace: no key." : "Click a key to change it. Right-click: back to its default.") : "Click a setting to change it.");
-    if (help && tab != 2 && tab != ModsTab && tab != KeysTab)
-        for (auto& it : tabs[tab]) if (it.help == help && it.restart) line += " (applies after a restart)";
-    ui::WrapText(api, g, f10, line, CX, helpY, (tab == ModsTab && AnyPending()) || tab == KeysTab ? CW - 180 : CW, ui::Cream, 2);
+                                    : tab == KeysTab ? (capturing >= 0 ? "Press the new key. Esc: keep the old one. Backspace or Delete: no key." : "Click a key to change it. Right-click: back to its default.") : "Click a setting to change it. Changes apply at once.");
+    ui::WrapText(api, g, f10, line, CX, helpY, (tab == ModsTab && AnyPending()) || tab == KeysTab ? CW - 180 : CW, ui::White, 2);
 }
 
 static int lastHover = -1;
@@ -459,7 +481,7 @@ static void Overlay(void* g)
 
 static void Changed() { openKey = api->config_int("settings", "open_key", VK_F2); }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "The settings page (F2) and the main menu's Remastered page."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "The settings page and the main menu's Remastered page."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

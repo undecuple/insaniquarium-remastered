@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace steam {
-struct Lobby { uint64_t id; std::string name, code; int members; };
+struct Lobby { uint64_t id; std::string name, code; int members; std::string version, tag; };   // the host's mod version and mod-set tag
 struct Events
 {
     void (*created)(uint64_t lobby);        // our lobby is up (host)

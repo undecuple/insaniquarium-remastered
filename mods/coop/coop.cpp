@@ -56,7 +56,7 @@ static int actingSlot = -1;                   // the player whose input the game
 enum Role { RoleNone, Feeder, Gunner, Collector, Shopper, RoleCount };
 static int roles[MaxPlayers];
 static const char* RoleNames[RoleCount] = { "No role", "Feeder", "Gunner", "Collector", "Shopper" };
-static const char* RoleHelp[RoleCount] = { "", "Your food costs half", "Your laser hits as if 2 levels stronger", "Coins you pick up pay 25% more", "The store is 15% cheaper for you" };
+static const char* RoleHelp[RoleCount] = { "", "Your food costs half.", "Your laser hits as if 2 levels stronger.", "Coins you pick up pay 25% more.", "The store is 15% cheaper for you." };
 static bool scaling = true;                   // host: prices and aliens tougher with more players
 static bool splitMoney;                       // host: every player has their own money (split wallets)
 static int wallets[MaxPlayers], walletSlot, feedSlot, moneyOwner = -1;   // split wallets (see UseWallet)
@@ -159,13 +159,16 @@ static std::string Fingerprint()
 {
     // the same mods (and versions) on every machine: otherwise the games can't stay identical
     std::string f = REMOD_VERSION;
+    std::vector<std::string> mods;   // sorted: the folder's order can differ between systems
     for (int i = 0;; i++)
     {
         const char *n, *d;
         int st = api->mod_list(i, &n, &d);
         if (st < 0) break;
-        if (st == REMOD_MOD_ON && strcmp(n, "testkit") && strcmp(n, "crashtest") && strcmp(n, "hello")) { f += "|"; f += n; }
+        if (st == REMOD_MOD_ON && strcmp(n, "testkit") && strcmp(n, "crashtest") && strcmp(n, "hello")) mods.push_back(n);
     }
+    std::sort(mods.begin(), mods.end(), [](const std::string& a, const std::string& b) { return _stricmp(a.c_str(), b.c_str()) < 0; });
+    for (auto& m : mods) f += "|" + m;
     if (HMODULE m = GetModuleHandleA("content.dll"))
         if (auto fp = reinterpret_cast<const char* (*)()>(GetProcAddress(m, "ContentFingerprint"))) { f += "|content:"; f += fp(); }
     return f;
@@ -237,6 +240,33 @@ static void EndSession(const char* why)
 static int InputFilter(unsigned msg, unsigned wp, long lp);
 
 // ---- Steam ------------------------------------------------------------------------------------------------------------
+// why two fingerprints differ, short enough for a line on screen ("|" isn't in the game's font)
+static std::string FingerprintDiff(const std::string& hostFp, const std::string& guestFp)
+{
+    auto split = [](const std::string& f) { std::vector<std::string> v; size_t a = 0, b; while ((b = f.find('|', a)) != std::string::npos) { v.push_back(f.substr(a, b - a)); a = b + 1; } v.push_back(f.substr(a)); return v; };
+    auto h = split(hostFp), g = split(guestFp);
+    if (h[0] != g[0]) return "different versions: the host has " + h[0] + ", you have " + g[0];
+    auto missing = [](const std::vector<std::string>& from, const std::vector<std::string>& in) {
+        std::string out;
+        for (size_t i = 1; i < from.size(); i++)
+            if (std::find(in.begin() + 1, in.end(), from[i]) == in.end()) out += (out.empty() ? "" : ", ") + (from[i].rfind("content:", 0) == 0 ? std::string("a content pack") : from[i]);
+        return out;
+    };
+    std::string theirs = missing(h, g), mine = missing(g, h), why = "different mods:";
+    if (!theirs.empty()) why += " the host has " + theirs;
+    if (!mine.empty()) why += std::string(theirs.empty() ? "" : ";") + " you have " + mine;
+    return why;
+}
+
+static std::string MatchTag();
+// why a listed match can't be joined, from its host's version ("" before 0.3.0)
+static std::string Incompatible(const std::string& version)
+{
+    if (version.empty() || version == REMOD_VERSION) return "different mods";
+    auto num = [](const std::string& v) { int a = 0, b = 0, c = 0; sscanf(v.c_str(), "%d.%d.%d", &a, &b, &c); return a * 1000000 + b * 1000 + c; };
+    return num(version) > num(REMOD_VERSION) ? "needs v" + version + " (update the mod)" : "the host has v" + version;
+}
+
 static std::string MatchTag()
 {
     uint32_t h = 2166136261u;
@@ -246,7 +276,7 @@ static std::string MatchTag()
     return t;
 }
 static std::string steamCode;
-static void SteamCreated(uint64_t lobby) { steamCode = steam::Code(lobby); status = "Steam game ready. Code: " + steamCode; Log("steam lobby %s", steamCode.c_str()); }
+static void SteamCreated(uint64_t lobby) { steamCode = steam::Code(lobby); status = "Steam game ready. Steam code: " + steamCode; Log("steam lobby %s", steamCode.c_str()); }
 static void SteamEntered(uint64_t owner)
 {
     peers[0] = Peer(); peers[0].used = true; peers[0].sid = owner;
@@ -266,7 +296,7 @@ static void SteamLeft(uint64_t user)
             SendLobby();
         }
 }
-static void SteamListed() { if (status.rfind("Looking for", 0) == 0) status.clear(); api->redraw(); }   // the list shows the result
+static void SteamListed() { if (state == Off && status.rfind("Looking for", 0) == 0) status.clear(); api->redraw(); }   // the list shows the result
 static const steam::Events SteamEvents = { SteamCreated, SteamEntered, SteamFailed, SteamLeft, SteamListed };
 static void SteamLog(const char* line) { api->log("coop: %s", line); }
 static bool SteamUp()
@@ -310,7 +340,14 @@ static void ServerEntered(uint64_t hostId)
     Send(peers[0], MHello, Fingerprint() + "\n" + MyName());
     status = "Joined: waiting for the host";
 }
-static void ServerListed() { std::string e = online::ListError(); status = e.empty() ? "" : "Couldn't list games: " + e; api->redraw(); }
+static bool OnListTab(bool server);   // the screen shows that list (the Online or the Steam tab, not in a game yet)
+static void ServerListed()
+{
+    std::string e = online::ListError();
+    if (OnListTab(true) && (status.rfind("Looking for", 0) == 0 || status.rfind("Couldn't list", 0) == 0 || !e.empty()))
+        status = e.empty() ? "" : "Couldn't list matches: " + e;
+    api->redraw();
+}
 static void ServerReconnecting(const char* why) { status = why; Log("%s", why); api->redraw(); }
 static void ServerReconnected()
 {
@@ -382,7 +419,7 @@ static bool ServerUp()
     ServerConf c = LoadServer();
     online::SetLog(SteamLog);
     online::Configure(ServerUrl(c), c.key, dev, ServerEvents);
-    if (c.host.empty() || c.key.empty()) { status = "Set the server's address and key (Server settings)"; return false; }
+    if (c.host.empty() || c.key.empty()) { status = "Set the server's address and key (Server tab)"; return false; }
     return true;
 }
 static bool HostServer(bool listed)
@@ -391,7 +428,7 @@ static bool HostServer(bool listed)
     net = NetServer; host = true; localSlot = 0; state = Lobby;
     names[0] = MyName();
     for (int i = 1; i < MaxPlayers; i++) names[i].clear();
-    status = "Connecting to your server...";
+    status = "Connecting to " + online::ServerName() + "...";
     online::Host(listed, names[0] + "'s tank", MatchTag());
     return true;
 }
@@ -485,7 +522,7 @@ static void RestoreProfile()
     {
         at<int>(p, Profile_mShells) = std::min(at<int>(p, Profile_mShells) + earned, 9999999);
         if (oSaveProfile) oSaveProfile(api->app());
-        api->toast(("+" + std::to_string(earned) + " shells from the co-op game").c_str());
+        api->toast(("+" + ui::Thousands(earned) + " Shells from the co-op game").c_str());
     }
     Log("own profile back");
 }
@@ -654,12 +691,14 @@ static void ProcessInput(int i)
     }
 }
 
+static void AutoRefreshList();
 static void Poll()
 {
-    if (state == Off)   // not in a game yet: the "Find games" lists still arrive through these
+    if (state == Off)   // not in a game yet: the public match lists still arrive through these
     {
         if (steam::Running()) steam::Frame();
         online::Frame();
+        AutoRefreshList();
         return;
     }
     if (net != NetTcp)
@@ -688,7 +727,7 @@ static void Poll()
         {
             int slot = -1;
             for (int i = 1; i < MaxPlayers; i++) if (!peers[i].used) { slot = i; break; }
-            if (slot < 0) { Peer t; t.s = s; Send(t, MRefuse, "The game is full"); closesocket(s); }
+            if (slot < 0) { Peer t; t.s = s; Send(t, MRefuse, "the game is full"); closesocket(s); }
             else { SetNonBlocking(s); peers[slot].s = s; peers[slot].used = true; peers[slot].in.clear(); }
         }
     }
@@ -708,7 +747,7 @@ static void Handle(int from, uint8_t type, const std::string& m)
                 std::string fp = m.substr(0, nl), name = nl == std::string::npos ? "Player" : wordfilter::Clean(m.substr(nl + 1, 24));   // the server doesn't check names inside game messages
                 if (fp != Fingerprint())
                 {
-                    Send(peers[from], MRefuse, "Different mods or versions: the host has " + Fingerprint());
+                    Send(peers[from], MRefuse, FingerprintDiff(Fingerprint(), fp));
                     Log("refused %s: fingerprint %s", name.c_str(), fp.c_str());
                     closesocket(peers[from].s); peers[from] = Peer();
                     return;
@@ -1186,7 +1225,7 @@ static void(__thiscall* oStartBoard)(void*);
 static bool RefuseInLobby(void* a)
 {
     if (state != Lobby || inLockstep) return false;
-    api->toast("You're in a co-op lobby: leave it (F7) to play on your own");
+    { int k = api->config_int("coop", "open_key", VK_F7); api->toast(("You're in a co-op lobby: leave it" + (k ? " (" + ui::KeyName(k) + ")" : std::string()) + " to play on your own").c_str()); }
     reopenScreen = true;
     if (!api->board() && !at<void*>(a, App_mGameSelector))
         reinterpret_cast<void(__thiscall*)(void*)>(App_ShowGameSelector)(a);
@@ -1562,20 +1601,28 @@ extern "C" __declspec(dllexport) int CoopPlaying() { return state == Playing ? 1
 static const int DialogId = 0x4e, DX = 30, DY = 20, DW = 580, DH = 440, CX = DX + 40, CW = DW - 80;
 static std::string* editField;   // the box being typed into (the address, or a server setting)
 // the server settings view (Online tab): edited here, saved on Test and Done
-static bool serverView, srvTls;
+static bool srvTls;
 static std::string srvHost, srvPort, srvKey, srvTest;
 static std::string address;
 static int pickMode = 0, pickTank = 1;   // what the host starts: 0 Adventure, 1 Time Trial, 4 Challenge
-// not in a game yet: by address on top, Steam below
-static RECT HostBtn() { return { CX, DY + 90, CX + 140, DY + 119 }; }
-static RECT AddrBox() { return { CX + 150, DY + 84, CX + CW - 110, DY + 124 }; }
-static RECT JoinBtn() { return { CX + CW - 100, DY + 90, CX + CW, DY + 119 }; }
-static RECT SteamTab() { return { CX, DY + 166, CX + 150, DY + 192 }; }    // tabs when a server is set: Steam / yours
-static RECT ServerTab() { return { CX + 156, DY + 166, CX + 306, DY + 192 }; }
-static RECT SteamPub() { return { CX, DY + 198, CX + 160, DY + 227 }; }
-static RECT SteamPriv() { return { CX + 170, DY + 198, CX + 330, DY + 227 }; }
-static RECT SteamRefresh() { return { CX + CW - 160, DY + 198, CX + CW, DY + 227 }; }
-static RECT SteamRow(int i) { return { CX, DY + 234 + i * 26, CX + CW, DY + 258 + i * 26 }; }
+// not in a game yet: four tabs. Online (the default: the mod's public server, or your own) and Steam each have Public
+// Match / Private Match, a code box and the list of public matches; Direct is the TCP address way; Server is your own
+// Nakama server's settings
+enum { TabOnline, TabSteam, TabDirect, TabServer, CoopTabs };
+static const char* const CoopTabNames[CoopTabs] = { "Online", "Steam", "Direct", "Server" };
+static int ctab = TabOnline;
+static std::string joinCode;   // the code box of the Online and Steam tabs
+static DWORD listAsked;        // when the public matches were last asked for
+static RECT CoopTab(int i) { int w = (CW - 4 * (CoopTabs - 1)) / CoopTabs; return { CX + i * (w + 4), ui::TabY, CX + i * (w + 4) + w, ui::TabY + ui::TabH }; }
+static RECT PublicBtn() { return { CX, DY + 110, CX + CW / 2 - 5, DY + 139 }; }
+static RECT PrivateBtn() { return { CX + CW / 2 + 5, DY + 110, CX + CW, DY + 139 }; }
+static RECT CodeBox() { return { CX, DY + 168, CX + CW - 110, DY + 168 + ui::EditH }; }
+static RECT CodeJoinBtn() { return { CX + CW - 100, DY + 170, CX + CW, DY + 199 }; }
+static RECT RefreshBtn() { return { CX + CW - 130, DY + 214, CX + CW, DY + 243 }; }
+static RECT ListRow(int i) { return { CX, DY + 248 + i * 26, CX + CW, DY + 272 + i * 26 }; }
+static RECT HostBtn() { return { CX, DY + 110, CX + 200, DY + 139 }; }   // Direct
+static RECT AddrBox() { return { CX, DY + 168, CX + CW - 110, DY + 168 + ui::EditH }; }
+static RECT JoinBtn() { return { CX + CW - 100, DY + 170, CX + CW, DY + 199 }; }
 // in the lobby
 static RECT LeaveBtn() { return { CX, DY + 80, CX + 120, DY + 109 }; }
 static RECT CopyBtn() { return { CX + 360, DY + 80, CX + 440, DY + 109 }; }
@@ -1593,15 +1640,14 @@ static int JoinedPlayers()   // you and every guest who has said who they are
     return players;
 }
 static RECT StartBtn() { return { CX + CW - 84, DY + 298, CX + CW, DY + 327 }; }
-static RECT ServerBtn() { return { CX + CW - 160, DY + 166, CX + CW, DY + 192 }; }   // Online tab: the server settings
-static RECT SrvHostBox() { return { CX + 80, DY + 196, CX + CW, DY + 228 }; }
-static RECT SrvPortBox() { return { CX + 80, DY + 236, CX + 180, DY + 268 }; }
-static RECT SrvTlsBtn() { return { CX + 200, DY + 238, CX + 330, DY + 266 }; }
-static RECT SrvKeyBox() { return { CX + 80, DY + 276, CX + CW, DY + 308 }; }
-static RECT SrvPublicBtn() { return { CX, DY + 318, CX + 150, DY + 347 }; }
-static RECT SrvTestBtn() { return { CX + 160, DY + 318, CX + 330, DY + 347 }; }
-static RECT SrvDoneBtn() { return { CX + CW - 110, DY + 318, CX + CW, DY + 347 }; }
-static bool steamListed, serverListed, serverTab;
+static RECT SrvHostBox() { return { CX + 80, DY + 136, CX + CW, DY + 136 + ui::EditH }; }   // the Server tab
+static RECT SrvPortBox() { return { CX + 80, DY + 176, CX + 180, DY + 176 + ui::EditH }; }
+static RECT SrvTlsBtn() { return { CX + 200, DY + 178, CX + 340, DY + 207 }; }
+static RECT SrvKeyBox() { return { CX + 80, DY + 216, CX + CW, DY + 216 + ui::EditH }; }
+static RECT SrvPublicBtn() { return { CX, DY + 262, CX + 160, DY + 291 }; }
+static RECT SrvTestBtn() { return { CX + 170, DY + 262, CX + 340, DY + 291 }; }
+static RECT SrvDoneBtn() { return { CX + CW - 110, DY + 262, CX + CW, DY + 291 }; }
+static bool steamListed, serverListed;
 static std::string ShownCode()
 {
     if (net == NetSteam) return steam::CurrentLobby() ? steam::Code(steam::CurrentLobby()) : "";
@@ -1655,19 +1701,62 @@ static void DrawAvatar(void* g, int a, int x, int y, int size)
     api->draw_image_scaled(g, img, x, y, frame * cw, 0, cw, ch, scale);
 }
 
+static void LoadServerFields()
+{
+    ServerConf c = LoadServer();
+    srvHost = c.host; srvPort = c.port; srvKey = c.key; srvTls = c.tls; srvTest.clear();
+}
+// switching tabs: Online and Steam ask for their public matches at once (quietly when they can't)
+static void ShowTab(int t)
+{
+    ctab = t;
+    listAsked = GetTickCount();
+    editing = false; editField = nullptr;
+    status.clear();
+    if (t == TabServer) LoadServerFields();
+    if (t == TabOnline && ServerUp()) { online::Refresh(MatchTag()); serverListed = true; }
+    if (t == TabSteam && SteamUp()) { steam::Refresh(MatchTag()); steamListed = true; }
+}
+// the shown list refreshes itself every 20 s
+static void AutoRefreshList()
+{
+    if (!screen || state != Off || !(ctab == TabOnline ? serverListed : ctab == TabSteam && steamListed) || GetTickCount() - listAsked < 20000) return;
+    listAsked = GetTickCount();
+    if (ctab == TabOnline) online::Refresh(MatchTag()); else steam::Refresh(MatchTag());
+}
+static bool OnListTab(bool server) { return state == Off && screen && ctab == (server ? TabOnline : TabSteam); }
+// the public matches of the Online or Steam tab: the ones you can join first (same mods and version), then the others
+struct Match { std::string name, code; int members; std::string version, tag; uint64_t steamId; };
+static std::vector<Match> Matches(bool server)
+{
+    std::vector<Match> m;
+    if (server) for (auto& l : online::Lobbies()) m.push_back({ l.name, l.code, l.members, l.version, l.tag, 0 });
+    else for (auto& l : steam::Lobbies()) m.push_back({ l.name, l.code, l.members, l.version, l.tag, l.id });
+    std::string tag = MatchTag();
+    std::stable_partition(m.begin(), m.end(), [&](const Match& x) { return x.tag == tag; });
+    return m;
+}
+static void JoinByCode()
+{
+    if (joinCode.empty()) return;
+    if (ctab == TabSteam) { uint64_t lobby = steam::FromCode(joinCode); if (lobby) JoinSteam(lobby); else status = "That isn't a Steam code"; }
+    else if (steam::FromCode(joinCode) && !online::IsCode(joinCode)) status = "That's a Steam code: join it on the Steam tab";
+    else if (online::IsCode(joinCode)) JoinServer(joinCode);
+    else status = "That isn't a room code";
+}
+
 static void OpenScreen()
 {
     if (screen || ui::DialogCount(api) > 0) return;
     char a[128];
     api->config_string("coop", "address", "", a, sizeof a);
     address = a;
-    serverTab = true;   // online games first (the mod's public server unless you set your own); Steam on the other tab
-    serverView = false;
-    if (ui::OpenDialog(api, DialogId, "CO-OP", "CLOSE", DX, DY, DW, DH)) screen = true;
+    joinCode.clear();
+    if (!ui::OpenDialog(api, DialogId, "CO-OP", "CLOSE", DX, DY, DW, DH)) return;
+    screen = true;
+    if (state == Off) ShowTab(TabOnline);   // (in a lobby the screen shows the lobby, its status kept)
 }
 
-static bool ServerSet() { return true; }   // there is always one: the public server by default
-static bool UseServer() { return serverTab && ServerSet(); }
 
 static void(__thiscall* oButton)(void*, int);
 static void __fastcall ButtonHook(void* a, void*, int id)
@@ -1686,52 +1775,80 @@ static int Mouse(int x, int y, int button, int down)
     if (y >= DY + DH - 70) return 0;
     if (!down || button != 0) return 1;
     editing = false; editField = nullptr;
-    auto current = [] { std::string port = srvPort.empty() ? (srvTls ? "443" : "80") : srvPort; return ServerConf{ srvHost, port, srvKey, srvTls }; };
-    if (state == Off && serverView && serverTab && y >= DY + 160)
-    {   // the server settings
-        if (ui::In(SrvHostBox(), x, y)) { editing = true; editField = &srvHost; }
-        else if (ui::In(SrvPortBox(), x, y)) { editing = true; editField = &srvPort; }
-        else if (ui::In(SrvKeyBox(), x, y)) { editing = true; editField = &srvKey; }
-        else if (ui::In(SrvTlsBtn(), x, y)) srvTls = !srvTls;
-        else if (ui::In(SrvPublicBtn(), x, y))
+    {   // the game's click for every button pressed (not for the edit boxes or list rows)
+        std::vector<RECT> btns;
+        if (state != Off)
         {
-            srvHost = PublicHost; srvPort = std::to_string(PublicPort); srvTls = true; srvKey = PublicKey;
-            SaveServer(current()); srvTest = "Using the mod's public server";
-        }
-        else if (ui::In(SrvTestBtn(), x, y)) { SaveServer(current()); if (ServerUp()) { online::Test(); srvTest = "Testing..."; } else srvTest = status; }
-        else if (ui::In(SrvDoneBtn(), x, y)) { SaveServer(current()); serverView = false; serverListed = false; status.clear(); }
-        else if (ui::In(SteamTab(), x, y)) { SaveServer(current()); serverView = false; serverTab = false; }
-        api->redraw();
-        return 1;
-    }
-    if (state == Off)
-    {
-        if (ui::In(HostBtn(), x, y)) Host();
-        else if (ui::In(JoinBtn(), x, y) && !address.empty()) Join(address);
-        else if (ui::In(AddrBox(), x, y)) { editing = true; editField = &address; }
-        else if (UseServer() && ui::In(ServerBtn(), x, y))
-        {
-            ServerConf c = LoadServer();
-            srvHost = c.host; srvPort = c.port; srvKey = c.key; srvTls = c.tls; srvTest.clear();
-            serverView = true;
-        }
-        else if (ServerSet() && ui::In(SteamTab(), x, y)) serverTab = false;
-        else if (ServerSet() && ui::In(ServerTab(), x, y)) serverTab = true;
-        else if (ui::In(SteamPub(), x, y)) { if (UseServer()) HostServer(true); else HostSteam(true); }
-        else if (ui::In(SteamPriv(), x, y)) { if (UseServer()) HostServer(false); else HostSteam(false); }
-        else if (ui::In(SteamRefresh(), x, y))
-        {
-            if (UseServer()) { if (ServerUp()) { online::Refresh(MatchTag()); serverListed = true; status = "Looking for games on " + online::ServerName() + "..."; } }
-            else if (SteamUp()) { steam::Refresh(MatchTag()); steamListed = true; status = "Looking for Steam games..."; }
-        }
-        else if (UseServer())
-        {
-            for (int i = 0; i < (int)online::Lobbies().size() && i < 4; i++)
-                if (serverListed && ui::In(SteamRow(i), x, y)) { JoinServer(online::Lobbies()[i].code); break; }
+            btns = { LeaveBtn(), RoleBtn(), AvatarBtn() };
+            if (!ShownCode().empty()) btns.push_back(CopyBtn());
+            if (host) btns.insert(btns.end(), { VersusBtn(), WalletBtn(), ScaleBtn(), ModeBtn(), StartBtn() });
+            if (host && pickMode != 0) btns.push_back(TankBtn());
         }
         else
-            for (int i = 0; i < (int)steam::Lobbies().size() && i < 4; i++)
-                if (steamListed && ui::In(SteamRow(i), x, y)) { JoinSteam(steam::Lobbies()[i].id); break; }
+        {
+            for (int i = 0; i < CoopTabs; i++) if (i != ctab) btns.push_back(CoopTab(i));
+            if (ctab == TabOnline || ctab == TabSteam) { btns.insert(btns.end(), { PublicBtn(), PrivateBtn(), RefreshBtn() }); if (!joinCode.empty()) btns.push_back(CodeJoinBtn()); }
+            if (ctab == TabDirect) { btns.push_back(HostBtn()); if (!address.empty()) btns.push_back(JoinBtn()); }
+            if (ctab == TabServer) btns.insert(btns.end(), { SrvTlsBtn(), SrvPublicBtn(), SrvTestBtn(), SrvDoneBtn() });
+        }
+        for (auto& b : btns) if (ui::In(b, x, y)) { ui::Click(api); break; }
+    }
+    auto current = [] { std::string port = srvPort.empty() ? (srvTls ? "443" : "80") : srvPort; return ServerConf{ srvHost, port, srvKey, srvTls }; };
+    if (state == Off)
+    {
+        for (int i = 0; i < CoopTabs; i++)
+            if (ui::In(CoopTab(i), x, y))
+            {
+                if (ctab == TabServer && i != TabServer) SaveServer(current());
+                if (i != ctab) ShowTab(i);
+                api->redraw();
+                return 1;
+            }
+        if (ctab == TabServer)
+        {
+            if (ui::In(SrvHostBox(), x, y)) { editing = true; editField = &srvHost; }
+            else if (ui::In(SrvPortBox(), x, y)) { editing = true; editField = &srvPort; }
+            else if (ui::In(SrvKeyBox(), x, y)) { editing = true; editField = &srvKey; }
+            else if (ui::In(SrvTlsBtn(), x, y)) srvTls = !srvTls;
+            else if (ui::In(SrvPublicBtn(), x, y))
+            {
+                srvHost = PublicHost; srvPort = std::to_string(PublicPort); srvTls = true; srvKey = PublicKey;
+                SaveServer(current()); srvTest = "Using the mod's public server";
+            }
+            else if (ui::In(SrvTestBtn(), x, y)) { SaveServer(current()); if (ServerUp()) { online::Test(); srvTest = "Testing..."; } else srvTest = status; }
+            else if (ui::In(SrvDoneBtn(), x, y)) { SaveServer(current()); serverListed = false; ShowTab(TabOnline); }
+        }
+        else if (ctab == TabDirect)
+        {
+            if (ui::In(HostBtn(), x, y)) Host();
+            else if (ui::In(JoinBtn(), x, y) && !address.empty()) Join(address);
+            else if (ui::In(AddrBox(), x, y)) { editing = true; editField = &address; }
+        }
+        else
+        {
+            bool srv = ctab == TabOnline;
+            if (ui::In(PublicBtn(), x, y)) { if (srv) HostServer(true); else HostSteam(true); }
+            else if (ui::In(PrivateBtn(), x, y)) { if (srv) HostServer(false); else HostSteam(false); }
+            else if (ui::In(CodeBox(), x, y)) { editing = true; editField = &joinCode; }
+            else if (ui::In(CodeJoinBtn(), x, y)) JoinByCode();
+            else if (ui::In(RefreshBtn(), x, y))
+            {
+                if (srv) { if (ServerUp()) { online::Refresh(MatchTag()); serverListed = true; status = "Looking for matches on " + online::ServerName() + "..."; } }
+                else if (SteamUp()) { steam::Refresh(MatchTag()); steamListed = true; status = "Looking for Steam matches..."; }
+            }
+            else if (srv ? serverListed : steamListed)
+            {
+                std::vector<Match> rows = Matches(srv);
+                for (int i = 0; i < (int)rows.size() && i < 4; i++)
+                    if (ui::In(ListRow(i), x, y))
+                    {
+                        if (rows[i].tag != MatchTag()) { status = "Can't join: " + Incompatible(rows[i].version); break; }
+                        ui::Click(api);
+                        if (srv) JoinServer(rows[i].code); else JoinSteam(rows[i].steamId);
+                        break;
+                    }
+            }
+        }
     }
     else
     {
@@ -1782,7 +1899,8 @@ static int Key(int vk, int down)
     {
         editing = false;
         if (&t == &address && vk == VK_RETURN && state == Off && !address.empty()) Join(address);
-        if (vk == VK_TAB && serverView) { editing = true; editField = &t == &srvHost ? &srvPort : &t == &srvPort ? &srvKey : &srvHost; }
+        if (&t == &joinCode && vk == VK_RETURN && state == Off) JoinByCode();
+        if (vk == VK_TAB && ctab == TabServer) { editing = true; editField = &t == &srvHost ? &srvPort : &t == &srvPort ? &srvKey : &srvHost; }
     }
     else if (vk >= '0' && vk <= '9') t += (char)vk;
     else if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9) t += (char)('0' + vk - VK_NUMPAD0);
@@ -1851,7 +1969,7 @@ static void Overlay(void* g)
             for (int i = 0; i < MaxPlayers; i++)
             {
                 if (i == localSlot || !HasWallet(i)) continue;
-                std::string t = names[i] + " $" + std::to_string(WalletOf(i));
+                std::string t = names[i] + " $" + ui::Thousands(WalletOf(i));
                 int w = api->text_width_font(f10, t.c_str());
                 api->fill_rect(g, 626 - w - 6, 80 + row * 16, w + 10, 16, 0x90000000);
                 api->draw_text_font(g, f10, t.c_str(), 626 - w - 1, 93 + row * 16, Colors[i]);
@@ -1902,120 +2020,125 @@ static void Overlay(void* g)
     using ui::Look;
     if (state == Off)
     {
-        api->draw_text_font(g, f12, "Play by address", CX, DY + 78, ui::Yellow);
-        ui::Button(api, g, HostBtn(), "Host a game", Look::Main);
-        ui::EditBox(api, g, AddrBox(), address, editing, "address or room code");
-        ui::Button(api, g, JoinBtn(), "Join", Look::Main, !address.empty());
-        ui::FitText(api, g, f10, "Host's TCP port " + std::to_string(port) + " must be open: LAN, VPN or forwarding.", CX, DY + 140, CW, ui::Cream);
-        ui::FitText(api, g, f10, "Room codes and Steam join here too. Same mods for all.", CX, DY + 156, CW, ui::Cream);
-        bool srv = UseServer();
-        ui::Button(api, g, SteamTab(), "Steam", Look::Center, true, !srv);
-        ui::Button(api, g, ServerTab(), "Online", Look::Center, true, srv);
-        if (ui::Hover(api, ServerTab())) ui::Tooltip(("Games through the server " + online::ServerName() + " (no ports to open). Change it in Server settings.").c_str());
-        if (srv) ui::Button(api, g, ServerBtn(), serverView ? "Server settings" : "Server settings...", Look::Center, true, serverView);
-        if (ui::Hover(api, SteamTab())) ui::Tooltip("Games through Steam: needs Steam running and a steam_api.dll (found by itself in most cases).");
-        if (srv && serverView)
+        for (int i = 0; i < CoopTabs; i++) ui::Button(api, g, CoopTab(i), CoopTabNames[i], Look::Main, true, i == ctab);
+        if (ctab == TabServer)
         {
             std::string r;
             if (online::TestResult(r)) srvTest = r;
-            api->draw_text_font(g, f12, "Server", CX, DY + 218, ui::Cream);
+            ui::FitText(api, g, f10, "Your own Nakama server for the Online tab (see docs/SERVER.md).", CX, DY + 122, CW, ui::White);
+            api->draw_text_font(g, f10, "Server", CX, DY + 158, ui::White);
             ui::EditBox(api, g, SrvHostBox(), srvHost, editing && editField == &srvHost, "the server's name or address");
-            api->draw_text_font(g, f12, "Port", CX, DY + 258, ui::Cream);
+            api->draw_text_font(g, f10, "Port", CX, DY + 198, ui::White);
             ui::EditBox(api, g, SrvPortBox(), srvPort, editing && editField == &srvPort, srvTls ? "443" : "80");
-            ui::Button(api, g, SrvTlsBtn(), srvTls ? "TLS: on (https)" : "TLS: off (http)", Look::Center, true, srvTls);
+            ui::Button(api, g, SrvTlsBtn(), srvTls ? "TLS: on (https)" : "TLS: off (http)", Look::Dialog, true, srvTls);
             if (ui::Hover(api, SrvTlsBtn())) ui::Tooltip("On for servers on the internet. Off only for a server on your own network (plain http, port 7350).");
-            api->draw_text_font(g, f12, "Key", CX, DY + 298, ui::Cream);
+            api->draw_text_font(g, f10, "Key", CX, DY + 238, ui::White);
             ui::EditBox(api, g, SrvKeyBox(), srvKey, editing && editField == &srvKey, "the server key (not a password: every player has it)");
-            ui::Button(api, g, SrvPublicBtn(), "Public server", Look::Center);
+            ui::Button(api, g, SrvPublicBtn(), "Public Server", Look::Dialog);
             if (ui::Hover(api, SrvPublicBtn())) ui::Tooltip("Back to the mod's public server (insanicoop.mychud.net).");
-            ui::Button(api, g, SrvTestBtn(), "Test connection", Look::Center);
-            ui::Button(api, g, SrvDoneBtn(), "Done", Look::Main);
-            if (!srvTest.empty()) ui::FitText(api, g, f10, srvTest, CX, DY + 362, CW, srvTest.rfind("Connection OK", 0) == 0 ? 0xff9cf09c : ui::White);
-            ui::DrawTooltip(api, g);
-            return;
+            ui::Button(api, g, SrvTestBtn(), "Test Connection", Look::Dialog);
+            ui::Button(api, g, SrvDoneBtn(), "Save", Look::Main);
+            if (!srvTest.empty()) ui::FitText(api, g, f10, srvTest, CX, DY + 312, CW, srvTest.rfind("Connection OK", 0) == 0 ? ui::Green : ui::White);
         }
-        ui::Button(api, g, SteamPub(), "Host: listed", Look::Center);
-        ui::Button(api, g, SteamPriv(), "Host: private", Look::Center);
-        ui::Button(api, g, SteamRefresh(), "Find games", Look::Center);
-        struct Row { std::string name, code; int members; };
-        std::vector<Row> rows;
-        bool listed = srv ? serverListed : steamListed;
-        if (srv) for (auto& l : online::Lobbies()) rows.push_back({ l.name, l.code, l.members });
-        else for (auto& l : steam::Lobbies()) rows.push_back({ l.name, l.code, l.members });
-        if (listed)
+        else if (ctab == TabDirect)
         {
-            if (rows.empty()) ui::FitText(api, g, f10, srv ? "No listed games on " + online::ServerName() + " right now (private ones join by code)."
-                                                           : std::string("No listed games right now (private ones join by code)."), CX, DY + 252, CW, 0xffd0d0d0);
-            for (int i = 0; i < (int)rows.size() && i < 4; i++)
+            ui::Button(api, g, HostBtn(), "Host a Game", Look::Main);
+            ui::FitText(api, g, f10, "Your TCP port " + std::to_string(port) + " must be open: LAN, VPN or forwarding.", CX, DY + 158, CW, ui::White);
+            ui::EditBox(api, g, AddrBox(), address, editing && editField == &address, "the host's address");
+            ui::Button(api, g, JoinBtn(), "Join", Look::Main, !address.empty());
+            ui::FitText(api, g, f10, "Everyone needs the same mods.", CX, DY + 222, CW, ui::White);
+        }
+        else
+        {
+            bool srv = ctab == TabOnline;
+            ui::Button(api, g, PublicBtn(), "Public Match", Look::Main);
+            ui::Button(api, g, PrivateBtn(), "Private Match", Look::Main);
+            if (ui::Hover(api, PublicBtn())) ui::Tooltip("Host a match anyone can join from the list.");
+            if (ui::Hover(api, PrivateBtn())) ui::Tooltip("Host a match only friends with its code can join.");
+            ui::FitText(api, g, f10, srv ? "Through " + online::ServerName() + ": nothing to set up."
+                                         : std::string("Through Steam: needs Steam running."), CX, DY + 156, CW, ui::White);
+            ui::EditBox(api, g, CodeBox(), joinCode, editing && editField == &joinCode, srv ? "a friend's room code" : "a friend's Steam code");
+            ui::Button(api, g, CodeJoinBtn(), "Join", Look::Main, !joinCode.empty());
+            api->draw_text_font(g, f12, "Public Matches", CX, DY + 236, ui::Gold);
+            ui::Button(api, g, RefreshBtn(), "Refresh", Look::Dialog);
+            std::vector<Match> rows = Matches(srv);
+            bool listed = srv ? serverListed : steamListed;
+            if (listed && rows.empty()) ui::FitText(api, g, f10, "No public matches right now: host one!", CX, DY + 266, CW, ui::White);
+            for (int i = 0; listed && i < (int)rows.size() && i < 4; i++)
             {
-                RECT rr = SteamRow(i);
-                bool over = ui::Hover(api, rr);
-                if (over) api->fill_rect(g, rr.left, rr.top, ui::W(rr), ui::H(rr), 0x40ffffff);
-                ui::FitText(api, g, f12, rows[i].name, rr.left + 8, rr.bottom - 7, CW - 170, over ? ui::White : ui::Cream);
-                std::string t = std::to_string(rows[i].members) + "/4   " + rows[i].code;
-                api->draw_text_font(g, f10, t.c_str(), rr.right - 8 - api->text_width_font(f10, t.c_str()), rr.bottom - 7, 0xff9cf09c);
+                // each match with its version; one with other mods or another version is shown greyed (not joinable)
+                RECT rr = ListRow(i);
+                bool ok = rows[i].tag == MatchTag(), over = ui::Hover(api, rr);
+                if (over && ok) api->fill_rect(g, rr.left, rr.top, ui::W(rr), ui::H(rr), 0x40ffffff);
+                std::string ver = rows[i].version.empty() ? "" : "v" + rows[i].version;
+                std::string t = ok ? std::to_string(rows[i].members) + "/4   " + rows[i].code : Incompatible(rows[i].version);
+                int tw = api->text_width_font(f10, t.c_str());
+                ui::FitText(api, g, f10, rows[i].name, rr.left + 8, rr.bottom - 8, CW - 230, ok ? ui::White : ui::Grey);
+                if (!ver.empty()) api->draw_text_font(g, f10, ver.c_str(), rr.left + CW - 220, rr.bottom - 8, ok ? ui::MenuSub : ui::Grey);
+                api->draw_text_font(g, f10, t.c_str(), rr.right - 8 - tw, rr.bottom - 8, ok ? ui::Green : ui::Warn);
+                if (over && !ok) ui::Tooltip("Can't join: " + Incompatible(rows[i].version) + ". Everyone in a match needs the same version and mods.");
             }
         }
     }
     else
     {
-        ui::Button(api, g, LeaveBtn(), "Leave", Look::Center);
+        ui::Button(api, g, LeaveBtn(), "Leave", Look::Main);
         std::string code = ShownCode();
         if (!code.empty())
         {
-            api->draw_text_font(g, f12, ((net == NetSteam ? "Steam code: " : "Room code: ") + code).c_str(), CX + 136, DY + 100, 0xff9cf09c);
+            api->draw_text_font(g, f12, ((net == NetSteam ? "Steam code: " : "Room code: ") + code).c_str(), CX + 136, DY + 100, ui::Green);
             if (net == NetServer)
             {
                 std::string on = "on " + online::ServerName();
-                ui::FitText(api, g, f10, on, CX + 136, DY + 116, 210, ui::Cream);
-                if (ui::Hover(api, RECT{ CX + 136, DY + 86, CX + 346, DY + 120 })) ui::Tooltip("Room codes work on this server only: friends need the same server (Online, Server settings).");
+                ui::FitText(api, g, f10, on, CX + 136, DY + 116, 210, ui::White);
+                if (ui::Hover(api, RECT{ CX + 136, DY + 86, CX + 346, DY + 120 })) ui::Tooltip("Room codes work on this server only: friends need the same server (the Server tab).");
             }
-            ui::Button(api, g, CopyBtn(), "Copy", Look::Center);
+            ui::Button(api, g, CopyBtn(), "Copy", Look::Dialog);
         }
-        api->draw_text_font(g, f12, "Players", CX, DY + 140, ui::Yellow);
+        api->draw_text_font(g, f12, "Players", CX, DY + 140, ui::Gold);
         for (int i = 0; i < MaxPlayers; i++)
         {
             std::string n = names[i].empty() ? "-" : names[i] + (i == 0 ? "  (host)" : "") + (i == localSlot ? "  (you)" : "") +
-                            (roles[i] ? std::string("  - ") + RoleNames[roles[i]] : "");
-            if (versus && i == VersusSlot && !names[i].empty()) n += "  - the aliens";
+                            (roles[i] ? std::string(", ") + RoleNames[roles[i]] : "");
+            if (versus && i == VersusSlot && !names[i].empty()) n += ", the aliens";
             api->fill_rect(g, CX, DY + 152 + i * 26, 12, 12, names[i].empty() ? 0x40000000 : Colors[i]);
             if (!names[i].empty()) DrawAvatar(g, avatars[i], CX + 16, DY + 145 + i * 26, 24);
             ui::FitText(api, g, f12, n, CX + 46, DY + 164 + i * 26, CW - 276, ui::White);
         }
-        ui::Button(api, g, RoleBtn(), (std::string("Your role: ") + RoleNames[roles[localSlot]]).c_str(), Look::Main);
-        if (roles[localSlot]) ui::WrapText(api, g, f10, RoleHelp[roles[localSlot]], RoleBtn().left, RoleBtn().bottom + 14, ui::W(RoleBtn()), ui::Cream, 2);
-        ui::Button(api, g, AvatarBtn(), (std::string("Avatar: ") + AvatarNames[MyAvatar()]).c_str(), Look::Main);
+        ui::Button(api, g, RoleBtn(), (std::string("Your role: ") + (roles[localSlot] ? RoleNames[roles[localSlot]] : "none")).c_str(), Look::Dialog);
+        if (roles[localSlot]) ui::WrapText(api, g, f10, RoleHelp[roles[localSlot]], RoleBtn().left, RoleBtn().bottom + 14, ui::W(RoleBtn()), ui::White, 2);
+        ui::Button(api, g, AvatarBtn(), (std::string("Avatar: ") + AvatarNames[MyAvatar()]).c_str(), Look::Dialog);
         if (ui::Hover(api, AvatarBtn())) ui::Tooltip("Shown on your pointer for the others. Click for the next one.");
         if (host)
         {
-            ui::Button(api, g, VersusBtn(), versus ? "Versus: on" : "Versus: off", Look::Center, true, versus);
+            ui::Button(api, g, VersusBtn(), versus ? "Versus: on" : "Versus: off", Look::Dialog, true, versus);
             if (ui::Hover(api, VersusBtn())) ui::Tooltip("The first player to join steers the aliens with the pointer (click to dash) and tries to eat every fish; the others defend the tank.");
         }
-        else if (versus) ui::WrapText(api, g, f10, localSlot == VersusSlot ? "Versus: you steer the aliens! Eat every fish." : "Versus: " + names[VersusSlot] + " steers the aliens.", VersusBtn().left, VersusBtn().top + 14, ui::W(VersusBtn()), 0xffff9090, 2);
+        else if (versus) ui::WrapText(api, g, f10, localSlot == VersusSlot ? "Versus: you steer the aliens! Eat every fish." : "Versus: " + names[VersusSlot] + " steers the aliens.", VersusBtn().left, VersusBtn().top + 14, ui::W(VersusBtn()), ui::Warn, 2);
         if (host)
         {
-            ui::Button(api, g, WalletBtn(), splitMoney ? "Money: split" : "Money: shared", Look::Center, true, splitMoney);
+            ui::Button(api, g, WalletBtn(), splitMoney ? "Money: split" : "Money: shared", Look::Dialog, true, splitMoney);
             if (ui::Hover(api, WalletBtn())) ui::Tooltip("Split: every player has their own money. Coins pay whoever clicked them, pets' pickups are shared out, and you buy with your own.");
         }
-        else if (splitMoney) ui::FitText(api, g, f10, "Money: everyone has their own", CX, WalletBtn().top + 18, ui::W(WalletBtn()) + 60, ui::Cream);
+        else if (splitMoney) ui::FitText(api, g, f10, "Money: everyone has their own", CX, WalletBtn().top + 18, ui::W(WalletBtn()) + 60, ui::White);
         if (host)
         {
-            ui::Button(api, g, ScaleBtn(), scaling ? "Scaling: on" : "Scaling: off", Look::Center, true, scaling);
+            ui::Button(api, g, ScaleBtn(), scaling ? "Scaling: on" : "Scaling: off", Look::Dialog, true, scaling);
             if (ui::Hover(api, ScaleBtn())) ui::Tooltip("Tougher tanks for more players: prices +25% and aliens +50% for each player after the first.");
-            ui::Button(api, g, ModeBtn(), ModeName(pickMode), Look::Center);
-            if (pickMode != 0) ui::Button(api, g, TankBtn(), ("Tank " + std::to_string(pickTank)).c_str(), Look::Center);
+            ui::Button(api, g, ModeBtn(), ModeName(pickMode), Look::Dialog);
+            if (pickMode != 0) ui::Button(api, g, TankBtn(), ("Tank " + std::to_string(pickTank)).c_str(), Look::Dialog);
             bool ready = JoinedPlayers() >= 2;
             ui::Button(api, g, StartBtn(), "Start", Look::Main, ready);
             if (!ready && ui::Hover(api, StartBtn())) ui::Tooltip("Waiting for players: share the room code. To play on your own, leave the lobby.");
         }
-        else ui::FitText(api, g, f10, "The host picks the game and starts it.", CX, DY + 314, CW, ui::Cream);
+        else ui::FitText(api, g, f10, "The host picks the game and starts it.", CX, DY + 314, CW, ui::White);
     }
     ui::FitText(api, g, f10, status, CX, DY + DH - 82, CW, ui::White);
     if (state == Lobby) { api->set_input_filter(InputFilter); DrawChat(g, true); }   // the filter takes the chat key in the lobby too
     ui::DrawTooltip(api, g);
 }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Co-op for 2-4 players online (no setup), over Steam or by address; avatars, versus, split money. F7."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Co-op for 2-4 players online (no setup), over Steam or by address; avatars, versus, split money."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

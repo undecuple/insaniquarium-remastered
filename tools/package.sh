@@ -23,8 +23,14 @@ python3 - "$D/README.txt" <<'PY'
 import re, sys
 text = open('README.md').read()
 text = re.sub(r'## Screenshots\n.*?(?=\n## )', '', text, flags=re.S)
+text = re.sub(r'<!-- badges.*?<!-- /badges -->\n\n?', '', text, flags=re.S)   # the badges and quick links (GitHub only)
 text = re.sub(r'\[!\[[^\]]*\]\([^)]*\)\]\(([^)]*)\)', r'\1', text)   # an image link (the Ko-fi badge): its address
 text = '\n'.join(l for l in text.split('\n') if not l.lstrip().startswith('!['))
+# relative links: to the zip's own files where it has them, else to the project page (the zip has no docs/ folder)
+local = {'docs/INSTALL.md': 'INSTALL.txt', 'LICENSE.txt': 'LICENSES.txt', 'NOTICE.md': 'LICENSES.txt'}
+base = 'https://github.com/undecuple/insaniquarium-remastered/blob/main/'
+text = re.sub(r'\]\(((?!https?:|#)[^)]+)\)',
+              lambda m: '](' + local.get(m.group(1).split('#')[0], base + m.group(1)) + ')', text)
 open(sys.argv[1], 'w', newline='\r\n').write(text)
 PY
 cp docs/INSTALL.md "$D/INSTALL.txt"
@@ -49,6 +55,11 @@ PY
   cat LICENSE.txt
   echo
   echo "================================================================================"
+  echo "Third-party components and credits (NOTICE.md)"
+  echo "================================================================================"
+  cat NOTICE.md
+  echo
+  echo "================================================================================"
   echo "MinHook (compiled into ddraw.dll) - https://github.com/TsudaKageyu/minhook"
   echo "================================================================================"
   cat third_party/minhook/LICENSE.txt
@@ -61,7 +72,7 @@ PY
     echo "(https://partner.steamgames.com/documentation/sdk_access_agreement)."
   fi
 } | sed 's/\r$//' > "$D/LICENSES.txt"
-sed -i 's/$/\r/' "$D/LICENSES.txt" "$D/README.txt" "$D/INSTALL.txt"   # Notepad-friendly line ends
+sed -i 's/$/\r/' "$D/LICENSES.txt" "$D/INSTALL.txt"   # Notepad-friendly line ends (README.txt is written with them)
 # a reproducible zip: entries sorted, every date = SOURCE_DATE_EPOCH (default: the last commit's time), fixed permissions
 EPOCH=${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct 2>/dev/null || echo 1767225600)}
 python3 - "$R" "$NAME" "$EPOCH" <<'PY'

@@ -46,6 +46,7 @@ remod_files() {
   for list in "$GAME/mods/remod-files.installed" "$GAME/mods/remod-files.txt" "$SRC/mods/remod-files.txt"; do
     [ -f "$list" ] && { tr -d '\r' < "$list" | grep -v '^version ' | tr '\\' /; return; }
   done
+  return 0
 }
 
 if [ $UNINSTALL = 1 ]; then

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iterator>
 #include "steam.h"
+#include "version.h"
 
 namespace steam {
 namespace {
@@ -345,6 +346,8 @@ void Frame()
                     {
                         lobby = r->lobby;
                         SteamAPI_ISteamMatchmaking_SetLobbyData(mm, lobby, "game", hostTag.c_str());
+                        SteamAPI_ISteamMatchmaking_SetLobbyData(mm, lobby, "mod", "insaniquarium-remastered");   // any version finds it
+                        SteamAPI_ISteamMatchmaking_SetLobbyData(mm, lobby, "version", REMOD_VERSION);
                         SteamAPI_ISteamMatchmaking_SetLobbyData(mm, lobby, "name", hostName.c_str());
                         SteamAPI_ISteamMatchmaking_SetLobbyData(mm, lobby, "visibility", hostListed ? "public" : "private");
                         if (ev.created) ev.created(lobby);
@@ -359,7 +362,10 @@ void Frame()
                     {
                         uint64_t l = SteamAPI_ISteamMatchmaking_GetLobbyByIndex(mm, (int)i);
                         const char* name = SteamAPI_ISteamMatchmaking_GetLobbyData(mm, l, "name");
-                        lobbies.push_back({ l, name && *name ? name : "A game", Code(l), SteamAPI_ISteamMatchmaking_GetNumLobbyMembers(mm, l) });
+                        const char* ver = SteamAPI_ISteamMatchmaking_GetLobbyData(mm, l, "version");
+                        const char* tg = SteamAPI_ISteamMatchmaking_GetLobbyData(mm, l, "game");
+                        lobbies.push_back({ l, name && *name ? name : "A game", Code(l), SteamAPI_ISteamMatchmaking_GetNumLobbyMembers(mm, l),
+                                            ver ? ver : "", tg ? tg : "" });
                     }
                     if (ev.listed) ev.listed();
                 }
@@ -402,9 +408,10 @@ void Host(bool listed, const std::string& name, const std::string& tag)
 void Refresh(const std::string& tag)
 {
     if (!running) return;
-    SteamAPI_ISteamMatchmaking_AddRequestLobbyListStringFilter(mm, "game", tag.c_str(), 0);   // equal
+    (void)tag;   // every version's lobbies (0.3.0 on): the list greys the ones with other mods or versions
+    SteamAPI_ISteamMatchmaking_AddRequestLobbyListStringFilter(mm, "mod", "insaniquarium-remastered", 0);   // equal
     SteamAPI_ISteamMatchmaking_AddRequestLobbyListStringFilter(mm, "visibility", "public", 0);
-    SteamAPI_ISteamMatchmaking_AddRequestLobbyListResultCountFilter(mm, 20);
+    SteamAPI_ISteamMatchmaking_AddRequestLobbyListResultCountFilter(mm, 50);   // every version's: the screen puts joinable ones first
     listCall = SteamAPI_ISteamMatchmaking_RequestLobbyList(mm);
 }
 

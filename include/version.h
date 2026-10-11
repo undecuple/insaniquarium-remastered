@@ -2,12 +2,28 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.2.3"
+#define REMOD_VERSION "0.3.0"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.3.0", {
+        "The mod's screens look and sound like the game's",
+        "  own; tank messages use the game's message line.",
+        "Co-op in tabs: Online first, with Public Match,",
+        "  Private Match and a list that keeps itself up",
+        "  to date, showing each match's version; Steam,",
+        "  Direct and Server tabs.",
+        "Co-op: a clear message when mods differ.",
+        "Gadgets: hidden until Other Gadgets (bottom",
+        "  right) or F9 shows them.",
+        "Records: Hard Mode tables no longer overlap.",
+        "Mutators no longer apply in the sandbox.",
+        "Hungry-fish marks and coin values start off",
+        "  (Gameplay tab) unless you changed them.",
+        "Long messages wrap; numbers read 1,000.",
+        nullptr } },
     { "0.2.3", {
         "Windows: install-steam.bat now works in the",
         "  default Steam folder (Program Files (x86)):",

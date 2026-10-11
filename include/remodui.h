@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cctype>
+#include <cstdio>
 #include "remod.h"
 #include "game.h"
 
@@ -26,7 +28,27 @@ inline int FontHeight(void* f) { return f ? reinterpret_cast<int(__thiscall*)(vo
 inline void* F10() { return Font(game::FONT_JUNGLEFEVER10OUTLINE); }
 inline void* F12() { return Font(game::FONT_JUNGLEFEVER12OUTLINE); }
 inline void* F15() { return Font(game::FONT_JUNGLEFEVER15OUTLINE); }
-const unsigned Yellow = 0xfffff000, White = 0xffffffff, Lilac = 0xffc8c8ff, Grey = 0xff9a8a70, Cream = 0xffffe8a0;
+inline void* FontOr(uintptr_t global) { void* f = Font(global); return f ? f : F10(); }
+inline void* FTip() { return FontOr(game::FONT_TINYBOLD); }    // the game's tooltips
+inline void* FEdit() { return FontOr(game::FONT_LIDDIE12); }   // the game's edit boxes
+// the game's colours: button labels yellow (white when over), dialog buttons white, headings gold, the main menu's
+// sub-labels ("Tank 1-1", "%d Shells") pale cyan
+const unsigned Yellow = 0xfffff000, White = 0xffffffff, Lilac = 0xffc8c8ff, Grey = 0xff9a8a70, Cream = 0xffffe8a0,
+               Gold = 0xffffc800, MenuSub = 0xffe1fafa, Green = 0xff9cf09c, Warn = 0xffff9090, Black = 0xff000000;
+constexpr int SoundClick = 13;   // SOUND_BUTTONCLICK: every button press in the game's menus and dialogs (not checkboxes)
+inline void Click(const RemodApi* api) { api->play_sound(SoundClick); }
+// dialog screens: the size and places every mod screen shares
+constexpr int DlgX = 30, DlgY = 20, DlgW = 580, DlgH = 440, ContentX = DlgX + 40, ContentW = DlgW - 80;
+constexpr int TabY = DlgY + 66, TabH = 29, HelpY = DlgY + DlgH - 92;
+
+// 1234567 -> "1,234,567", as the game writes money and shells
+inline std::string Thousands(long long n)
+{
+    unsigned long long u = n < 0 ? 0ULL - (unsigned long long)n : (unsigned long long)n;
+    std::string d = std::to_string(u), out;
+    for (size_t i = 0; i < d.size(); i++) { if (i && (d.size() - i) % 3 == 0) out += ','; out += d[i]; }
+    return n < 0 ? "-" + out : out;
+}
 
 inline void Mouse(const RemodApi* api, int& x, int& y) { api->mouse_pos(&x, &y); }
 inline bool Hover(const RemodApi* api, const RECT& r) { int x, y; Mouse(api, x, y); return In(r, x, y); }
@@ -112,23 +134,24 @@ inline void FitText(const RemodApi* api, void* g, void* font, const std::string&
     if (Hover(api, RECT{ x, y - Ascent(font), x + width, y + 4 })) Tooltip(text);
 }
 
-// the tooltip of this frame, near the pointer: a dark panel with a brass edge, the text wrapped
+// the tooltip of this frame, near the pointer, as the game's ToolTipWidget: pale yellow with a black edge, black
+// FONT_TINYBOLD text 5 px in, as high as the text + 12 (longer tips wrapped)
 inline void DrawTooltip(const RemodApi* api, void* g)
 {
     std::string& t = TipText();
     if (t.empty()) return;
-    void* f = F10();
-    auto lines = Wrap(api, f, t, 260);
-    int lh = FontHeight(f) + 1, w = 0;
+    void* f = FTip();
+    auto lines = Wrap(api, f, t, 280);
+    int fh = FontHeight(f), w = 0;
     for (auto& l : lines) w = (std::max)(w, api->text_width_font(f, l.c_str()));
     int mx, my;
     Mouse(api, mx, my);
-    int bw = w + 16, bh = (int)lines.size() * lh + 10;
+    int bw = w + 10, bh = (int)lines.size() * fh + 12;
     int x = (std::min)(mx + 14, 636 - bw), y = my + 20 + bh > 478 ? my - bh - 8 : my + 20;
-    api->fill_rect(g, x, y, bw, bh, 0xffb08a40);
-    api->fill_rect(g, x + 1, y + 1, bw - 2, bh - 2, 0xf0281808);
-    int ty = y + 5 + Ascent(f);
-    for (auto& l : lines) { api->draw_text_font(g, f, l.c_str(), x + 8, ty, White); ty += lh; }
+    api->fill_rect(g, x, y, bw, bh, Black);
+    api->fill_rect(g, x + 1, y + 1, bw - 2, bh - 2, 0xffffffc8);
+    int ty = y + Ascent(f) + 6;
+    for (auto& l : lines) { api->draw_text_font(g, f, l.c_str(), x + 5, ty, Black); ty += fh; }
     t.clear();
 }
 
@@ -157,7 +180,8 @@ inline void* LookImage(Look l)
 }
 
 // one of the game's strip buttons (DialogButton): selected draws it held down (tabs, toggles); disabled: greyed label.
-// The box is as high as the image. Returns whether the pointer is over it.
+// The box is as high as the image. Labels as the game's: 2 px left of centre, moved 1,1 while held down; yellow
+// (white when over) on the menu strips, white on Look::Dialog (MakeDialogButton). Returns whether the pointer is over it.
 inline bool Button(const RemodApi* api, void* g, const RECT& r0, const char* text, Look look = Look::Center, bool enabled = true,
                    bool selected = false, void* font = nullptr)
 {
@@ -165,40 +189,44 @@ inline bool Button(const RemodApi* api, void* g, const RECT& r0, const char* tex
     if (!font) font = F10();
     int cw = ImgW(img) / 3, ch = ImgH(img);
     RECT r = { r0.left, r0.top + (H(r0) - ch) / 2, r0.right, r0.top + (H(r0) - ch) / 2 + ch };
+    int minW = cw / 3 * 2 + 2;   // ImageBox keeps a third of the cel at each end: narrower, it can't stretch the image
+    if (W(r) < minW) { int grow = minW - W(r); r.left -= grow / 2; r.right += grow - grow / 2; }
     bool over = enabled && Hover(api, r0), down = (over && Pressed()) || selected;
     ImageBox(api, g, img, down ? cw * 2 : over ? cw : 0, 0, cw, ch, r);
-    Label(api, g, font, text, r, !enabled ? Grey : over ? White : Yellow, down ? 1 : 0, (down ? 1 : 0) - 2);
+    unsigned col = !enabled ? Grey : look == Look::Dialog || over ? White : Yellow;
+    Label(api, g, font, text, r, col, (down ? 1 : 0) - 2, down ? 1 : 0);
     return over;
 }
 
 // the main menu's big buttons (ButtonWidget over the background's own button shapes): an over / down image when the
-// pointer is on it, the label in Jungle Fever 15 (yellow; lilac when over)
+// pointer is on it, the label in Jungle Fever 15 (yellow; lilac when over) centred in the whole button, and a sub-label
+// as GameSelector draws "Tank 1-1": Jungle Fever 10, pale cyan, its baseline 7 px above the bottom
 inline bool MenuButton(const RemodApi* api, void* g, const RECT& r, const char* text, bool big, bool enabled = true, const char* sub = nullptr)
 {
     bool over = enabled && Hover(api, r), down = over && Pressed();
     void* img = Image(big ? (down ? game::IMAGE_BATTLETANKBUTTOND : game::IMAGE_BATTLETANKBUTTON) : (down ? game::IMAGE_MIDDLEBUTTOND : game::IMAGE_MIDDLEBUTTON));
     if (over) api->draw_image(g, img, r.left, r.top);
     unsigned c = !enabled ? Grey : over ? Lilac : Yellow;
+    Label(api, g, F15(), text, r, c);
     if (sub)
     {
-        RECT top = { r.left, r.top, r.right, r.top + H(r) * 2 / 3 };
-        Label(api, g, F15(), text, top, c, 0, 4);
         void* f = F10();
-        api->draw_text_font(g, f, sub, r.left + (W(r) - api->text_width_font(f, sub)) / 2, r.bottom - 12, c);
+        api->draw_text_font(g, f, sub, r.left + (W(r) - api->text_width_font(f, sub)) / 2, r.bottom - 7, enabled ? MenuSub : Grey);
     }
-    else Label(api, g, F15(), text, r, c);
     return over;
 }
 
-// the game's edit box (as in the name dialog), with the text inside
+// the game's edit box (as in the name dialog: MakeEditWidget), with the text inside: FONT_LIDDIE12, pale blue-white,
+// 8 px in from the box (the game's box is 32 high)
+constexpr int EditH = 32;
 inline void EditBox(const RemodApi* api, void* g, const RECT& r, const std::string& text, bool editing, const char* hint)
 {
     void* img = Image(game::IMAGE_EDITBOX);
     ImageBox(api, g, img, 0, 0, ImgW(img), ImgH(img), r);
-    void* f = F12();
+    void* f = FEdit();
     std::string shown = text.empty() && !editing ? hint : text + (editing && (GetTickCount() / 400) % 2 ? "_" : "");
-    int y = r.top + (H(r) + Ascent(f)) / 2 - 2;
-    FitText(api, g, f, shown, r.left + 10, y, W(r) - 20, text.empty() && !editing ? Grey : White);
+    int y = r.top + (H(r) + Ascent(f)) / 2 - 1;
+    FitText(api, g, f, shown, r.left + 8, y, W(r) - 16, text.empty() && !editing ? Grey : 0xfff0f0ff);
 }
 
 // the folder the game keeps its saves in (userdata in the game's data folder: ProgramData\Steam\Insaniquarium for the
@@ -216,11 +244,21 @@ inline std::string UserData()
     return d + "userdata";
 }
 
-// a key's name for showing ("F2", "Space", "A"); "none" for 0 (a key setting switched off)
+// a key's name for showing ("F2", "Space", "A"); "None" for 0 (a key setting switched off). Common keys get fixed
+// names (Windows' own differ by system: "Return", "space"); others come from Windows with a capital first letter.
 inline std::string KeyName(int vk)
 {
-    if (vk <= 0) return "none";
+    if (vk <= 0) return "None";
     if (vk >= VK_F1 && vk <= VK_F24) return "F" + std::to_string(vk - VK_F1 + 1);
+    switch (vk)
+    {
+        case VK_RETURN: return "Enter";
+        case VK_SPACE: return "Space";
+        case VK_ESCAPE: return "Esc";
+        case VK_BACK: return "Backspace";
+        case VK_TAB: return "Tab";
+        case VK_DELETE: return "Delete";
+    }
     UINT sc = MapVirtualKeyA((UINT)vk, 0 /* MAPVK_VK_TO_VSC */);
     switch (vk)   // keys whose scan code is an extended one (the arrows and the block above them)
     {
@@ -228,7 +266,7 @@ inline std::string KeyName(int vk)
         case VK_INSERT: case VK_DELETE: case VK_DIVIDE: case VK_NUMLOCK: sc |= 0x100; break;
     }
     char n[64] = "";
-    if (sc && GetKeyNameTextA((LONG)(sc << 16), n, sizeof n) > 0) return n;
+    if (sc && GetKeyNameTextA((LONG)(sc << 16), n, sizeof n) > 0) { n[0] = (char)toupper((unsigned char)n[0]); return n; }
     char b[16];
     snprintf(b, sizeof b, "key %d", vk);
     return b;

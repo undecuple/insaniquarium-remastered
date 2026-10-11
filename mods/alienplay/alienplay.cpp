@@ -362,8 +362,8 @@ static void Overlay(void* g)
     }
     void* f = ui::Font(FONT_JUNGLEFEVER12OUTLINE), *f10 = ui::Font(FONT_JUNGLEFEVER10OUTLINE);
     char s[160];
-    std::string stars(std::max(0, lives + (HasAliens(b) ? 1 : 0)), '*');
-    snprintf(s, sizeof s, "%s   %s   Lives %s   Fish left %d   Keeper laser %d", StageName(stage).c_str(), Name(alienType), stars.empty() ? "-" : stars.c_str(), FishLeft(b), at<int>(b, Board_mWeaponLevel));
+    int left = std::max(0, lives + (HasAliens(b) ? 1 : 0));   // a number: the font draws '*' as two ticks
+    snprintf(s, sizeof s, "%s  %s  Lives %d  Fish %d  Laser %d", StageName(stage).c_str(), Name(alienType), left, FishLeft(b), at<int>(b, Board_mWeaponLevel));
     api->fill_rect(g, 0x24, 0x4a, api->text_width_font(f, s) + 12, 20, 0x82000000);
     api->draw_text_font(g, f, s, 0x2a, 0x5e, 0xff9cf09c);
     if (al && at<double>(al, Alien_mMaxHealth) > 0)
@@ -383,7 +383,7 @@ static void Overlay(void* g)
 
 extern "C" __declspec(dllexport) int ModeActive() { return On() ? 1 : 0; }   // for the content mod
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Play as the Alien: a 20-stage campaign against an AI keeper (Extra Modes)."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Play as Alien: a 20-stage campaign against an AI keeper (Extra Modes)."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

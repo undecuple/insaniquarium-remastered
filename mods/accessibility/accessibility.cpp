@@ -55,8 +55,8 @@ static void Overlay(void* g)
 
 static void Load()
 {
-    hungry = api->config_int("accessibility", "hungry", 1) != 0;
-    coins = api->config_int("accessibility", "coins", 1) != 0;
+    hungry = api->config_int("accessibility", "hungry", 0) != 0;
+    coins = api->config_int("accessibility", "coins", 0) != 0;
 }
 
 extern "C" __declspec(dllexport) const char* RemodDescribe() { return "A red ! over hungry fish, and each coin's value under it."; }

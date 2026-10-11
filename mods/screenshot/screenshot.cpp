@@ -80,7 +80,7 @@ static void Take()
     if (img) pDispose(img);
     DeleteObject(bmp);
     api->log(ok ? "screenshot: %s" : "screenshot: couldn't save %s", path.c_str());
-    api->toast(ok ? (std::string("Screenshot: screenshots\\") + name).c_str() : "Screenshot failed");
+    api->toast(ok ? (std::string("Saved ") + name + " in the screenshots folder").c_str() : "Screenshot failed");
 }
 
 static int Key(int vk, int down)
@@ -92,7 +92,7 @@ static int Key(int vk, int down)
 
 static void Load() { key = api->config_int("screenshot", "key", 0x7b); }
 
-extern "C" __declspec(dllexport) const char* RemodDescribe() { return "F12 saves a screenshot in the game folder's screenshots folder."; }
+extern "C" __declspec(dllexport) const char* RemodDescribe() { return "Saves a screenshot in the game folder's screenshots folder (its key is on the Keys tab)."; }
 
 extern "C" __declspec(dllexport) int RemodInit(const RemodApi* a)
 {

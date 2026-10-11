@@ -25,8 +25,9 @@ in the window you chose instead. If the Steam overlay misbehaves with the Direct
 Works (2026-10-05: lobby created in the Steam release, listed and found from another process, code copied). Not yet
 tested between two Steam accounts.
 - **Lobbies:** `ISteamMatchmaking` lobbies, listed or private, tagged `insaniquarium-remastered-mod-<hash>` (the hash
-  covers the mod version and mod list, so only matching games see each other; App ID 480 is shared with other
-  projects). Private games are joined by a code: "S" + the lobby's account number in base 33. The code is shown to
+  covers the mod version and mod list), with `mod=insaniquarium-remastered` and the host's `version` (App ID 480 is
+  shared with other projects: the `mod` key finds ours). The list shows every version's lobbies and greys the ones
+  with other mods or versions. Private games are joined by a code: "S" + the lobby's account number in base 33. The code is shown to
   everyone in the lobby with a Copy button; Ctrl+V pastes one into the join box.
 - **Networking:** `ISteamNetworkingMessages` between Steam users, relayed by Valve (no port forwarding, NAT traversal
   included), reliable messages.

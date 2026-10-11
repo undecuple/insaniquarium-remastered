@@ -8,7 +8,7 @@ keep their games on a machine they control (or a LAN party without internet):
 |---|---|---|---|
 | Needs | Nothing | A machine that stays on (a home server, a NAS, a small VPS) | Steam running, a `steam_api.dll` |
 | Who can join | Anyone with the room code, or from the list | Games set to your server and its key | Anyone on Steam with the lobby or its code |
-| Lobby list | Every listed game on the public server | Only your group's games | Shared with every Spacewar (App ID 480) game, filtered |
+| Lobby list | Every public match on the public server | Only your group's games | Shared with every Spacewar (App ID 480) game, filtered |
 | Upkeep | None | Updates, a domain and HTTPS if it's on the internet | None |
 
 ## What the server is
@@ -16,9 +16,10 @@ keep their games on a machine they control (or a LAN party without internet):
 - **accounts:** each game logs in anonymously with a random device id; no sign-up, no passwords for players;
 - **relayed matches:** one room per co-op game, joined with a 5-character room code; the server forwards each player's
   inputs to the others;
-- **storage:** listed games are public objects in the `remod_lobbies` collection, which **Find games** reads; private
-  games aren't listed. Each account has one listing, under the key `game` (the room code is in its value), overwritten
-  by every game it hosts. It carries a timestamp and is refreshed every 30 s while the game has room (players can join
+- **storage:** public matches are public objects in the `remod_lobbies` collection, which the public matches list reads; private
+  games aren't listed. Each account has one listing, under the key `game` (its value: the room code, name, players, the mod version and a tag for
+  the mod set), overwritten by every game it hosts. The list shows every version's matches and greys the ones the
+  player can't join (other version or mods). It carries a timestamp and is refreshed every 30 s while the game has room (players can join
   a game in progress); it's removed when the room closes or fills, and readers skip entries older than 2 minutes
   (nothing on the server cleans up after a game that vanished). If the server says an account has too many listings
   (left by older versions), the game deletes that account's own and lists again.
@@ -62,15 +63,15 @@ is small: a few KB/s per player. A 1-CPU, 1 GB VPS is plenty.
    ```sh
    curl http://192.168.1.20:7350/healthcheck          # or https://coop.example.com/healthcheck
    # {}  = running
-   curl -u "YOUR_SERVER_KEY:" -H 'Content-Type: application/json' -d '{"id":"test-device-000000"}' \
-     "http://192.168.1.20:7350/v2/account/authenticate/device?create=true"
+   curl -u "YOUR_SERVER_KEY:" -H 'Content-Type: application/json' -d '{"id":"test-player-000000"}' \
+     "http://192.168.1.20:7350/v2/account/authenticate/custom?create=true"
    # {"created":true,"token":"..."}  = the server key is right and logins work
    ```
 5. Give your players two things: the **address** and the **server key** (`NAKAMA_SERVER_KEY`). Keep everything else in
    `.env` to yourself.
 
 ## Connecting the game
-In the game: co-op screen (**Co-op** on the Remastered page, or **F7**) → **Online** tab → **Server settings**:
+In the game: co-op screen (**Co-op** on the Remastered page, or **F7**) → **Server** tab:
 
 | Field | Your server on the internet (with Caddy) | Your server on the LAN / VPN |
 |---|---|---|
@@ -79,7 +80,7 @@ In the game: co-op screen (**Co-op** on the Remastered page, or **F7**) → **On
 | TLS | on (https) | off (http) |
 | Key | your `NAKAMA_SERVER_KEY` | your `NAKAMA_SERVER_KEY` |
 
-**Test connection** checks it: the healthcheck, a login and the version (messages below). **Public server** puts the
+**Test Connection** checks it: the healthcheck, a login and the version (messages below). **Public Server** puts the
 mod's default back. The values are kept in `mods/remastered-mod.ini`, so you can also hand players these lines:
 ```ini
 [coop]
@@ -91,10 +92,10 @@ key=the-server-key
 **The server key isn't a password:** every player of that server has it in their settings. It keeps games that don't
 know it out; nothing more. The secrets are the other keys in `.env`.
 
-The Online tab then shows **Host: listed** (in everyone's **Find games**), **Host: private** (only for those with the
-room code) and **Find games**. The lobby shows the room code (5 characters, e.g. `3RJNN`) and which server it belongs
-to: codes only work on the server they were made on. Friends type or paste the code into the address box and press
-Join. Each game logs in with an anonymous id of its own (`[coop] device=`, made on first use).
+The **Online** tab then hosts a **Public Match** (in everyone's list of public matches) or a **Private Match** (only for
+those with the room code), and lists the public matches (**Refresh**). The lobby shows the room code (5 characters,
+e.g. `3RJNN`) and which server it belongs to: codes only work on the server they were made on. Friends type or paste
+the code into the Online tab's code box and press Join. Each game logs in with an anonymous id of its own (`[coop] device=`, made on first use).
 
 ### What the game sends (for your own proxy)
 Every request has a `User-Agent: InsaniquariumRemod/<version>` header. Paths the mod uses:
@@ -105,7 +106,7 @@ Every request has a `User-Agent: InsaniquariumRemod/<version>` header. Paths the
 | `/v2/account/authenticate/custom?create=true` | POST | login (HTTP Basic: the server key as user, empty password; body `{"id": "<device id>"}`) |
 | `/v2/storage` | PUT | listing a game (`remod_lobbies`, key `game`, public read, owner write) |
 | `/v2/storage/delete` | PUT | unlisting it (or the account's old listings) |
-| `/v2/storage/remod_lobbies?limit=100` | GET | **Find games** |
+| `/v2/storage/remod_lobbies?limit=100` (then `&cursor=` for the next pages) | GET | the public matches list (**Refresh**) |
 | `/v2/account` | GET | the account's own id, only when old listings must be cleared |
 | `/v2/storage/remod_lobbies?user_id=...&limit=100` | GET | the account's own listings, only then |
 | `/ws?lang=en&status=false&format=json&token=...` | GET (WebSocket) | the game connection: `match_create` (by room name), `match_data_send`, `match_leave`; it receives `match`, `match_presence_event`, `match_data` |
@@ -168,7 +169,7 @@ The module is a Lua file in `server/modules/` (mounted at `/nakama/data/modules`
 | Problem | What to check |
 |---|---|
 | `curl .../healthcheck` hangs or is refused | Containers running (`docker compose ps`)? Firewall/router port (7350, or 80+443 with Caddy)? Using the machine's LAN/VPN/public IP, not `127.0.0.1`, from another machine? |
-| **Test connection** says "wrong server key" | The key in the game doesn't match `NAKAMA_SERVER_KEY` exactly. |
+| **Test Connection** says "wrong server key" | The key in the game doesn't match `NAKAMA_SERVER_KEY` exactly. |
 | "path not allowed, or not a Nakama server" | The address points at something else (a website, a proxy that blocks the path): check the host and port, and the paths above. |
 | "certificate problem" | HTTPS on a server without a certificate (on a LAN, use TLS off and port 7350), or Caddy has no certificate yet. |
 | "too many requests, retrying in N s" | A rate limit in your proxy; the game waits by itself. |
