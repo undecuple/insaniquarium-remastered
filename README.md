@@ -4,7 +4,7 @@
 [![Build](https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml/badge.svg)](https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/undecuple/insaniquarium-remastered)](https://github.com/undecuple/insaniquarium-remastered/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE.txt)
-![Game: Steam 1.1](https://img.shields.io/badge/game-Steam%201.1-1b2838)
+[![Downloads](https://img.shields.io/github/downloads/undecuple/insaniquarium-remastered/total)](https://github.com/undecuple/insaniquarium-remastered/releases)
 ![Platform: Windows, Linux (Proton)](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(Proton)-0078D6)
 [![Ko-fi](https://img.shields.io/badge/support-Ko--fi-FF5E5B)](https://ko-fi.com/P5P615QPPM)
 

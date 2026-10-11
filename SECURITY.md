@@ -6,8 +6,8 @@ Only the latest release gets fixes. Please update before reporting.
 
 | Version | Supported |
 |---|---|
-| 0.2.x (latest) | :white_check_mark: |
-| < 0.2 | :x: |
+| 0.3.x (latest) | :white_check_mark: |
+| < 0.3 | :x: |
 
 ## Reporting a vulnerability
 
@@ -24,7 +24,8 @@ an explanation.
 The mod runs native code inside the game, so these matter most:
 
 - **Co-op:** anything another player (or a server) can send that crashes your game, reads or writes memory it
-  shouldn't, or runs code on your machine.
+  shouldn't, or runs code on your machine. That includes the public match list: match names, versions and codes
+  come from other players' games.
 - **The loader and the mods:** loading code from anywhere but the game's `mods` folder, or writing outside the game's
   own folders.
 - **The installers** (`install-steam.bat`, `install-steam.sh`): deleting or changing files that aren't the mod's.
@@ -32,7 +33,7 @@ The mod runs native code inside the game, so these matter most:
 
 Not a vulnerability:
 
-- The public server's **server key**: it ships with the game so players can log in (it keeps other games out,
+- The public server's **server key**: it ships with the mod so players can log in (it keeps other games out,
   nothing more); the server's real secrets are elsewhere.
 - Problems in the game itself, in Nakama, in Steam or in Wine/Proton: please report those to their makers.
 - Reports from automated scanners without a way to trigger them: every one is reviewed, but a `memcpy` or a format
