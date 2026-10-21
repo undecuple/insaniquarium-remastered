@@ -9,15 +9,17 @@ popcapgame1.exe its launcher writes to ProgramData\\PopCap Games\\Insaniquarium 
 only the launcher). It prints:
   - the code hash the loader checks (GAME_TEXT_HASH in include/game.h): equal = the mods turn on, nothing to do;
   - for every function address in game.h, whether its first bytes still match the recorded signature (a moved or
-    changed function shows up here);
+    changed function shows up here, with the new address when the same bytes are found elsewhere in the code);
   - for every data address (globals, resource pointers), whether it still lies inside the image.
 See docs/GAME-UPDATES.md for what to do with the result."""
-import os, re, struct, sys
+import hashlib, os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GAME_H = os.path.join(HERE, '..', 'include', 'game.h')
 SIGS = os.path.join(HERE, 'signatures.txt')
 SIG_LEN = 16
+# signatures.txt holds a SHA-256 of each function's first SIG_LEN bytes, not the bytes: the repo carries no game code
+def sig(b): return hashlib.sha256(b).hexdigest()
 
 def load_pe(path):
     d = open(path, 'rb').read()
@@ -68,8 +70,8 @@ def main():
     data = [(n, a) for n, a in addrs if not (base + text_rva <= a < code_end)]
     if update:
         with open(SIGS, 'w') as f:
-            f.write('# first %d bytes of every function in include/game.h, recorded from a known-good exe (tools/check-game.py --update)\n' % SIG_LEN)
-            for n, a in funcs: f.write(f'{n} {a:08x} {read(a, SIG_LEN).hex()}\n')
+            f.write('# SHA-256 of the first %d bytes of every function in include/game.h, recorded from a known-good exe (tools/check-game.py --update)\n' % SIG_LEN)
+            for n, a in funcs: f.write(f'{n} {a:08x} {sig(read(a, SIG_LEN))}\n')
         print(f'recorded {len(funcs)} signatures in {SIGS}')
         return
     sigs = {}
@@ -77,16 +79,21 @@ def main():
         for line in open(SIGS):
             if line.startswith('#') or not line.strip(): continue
             n, a, s = line.split()
-            sigs[n] = (int(a, 16), bytes.fromhex(s))
+            sigs[n] = (int(a, 16), s)
     bad = 0
+    moved = {}   # signature -> name of each function whose bytes differ, looked up in one pass over the code below
     for n, a in funcs:
         if n not in sigs: print(f'  ?  {n:32} {a:08x}  no recorded signature (run --update on a known-good exe)'); continue
         if sigs[n][0] != a: print(f'  ?  {n:32} {a:08x}  game.h changed since the signatures were recorded'); continue
-        got = read(a, SIG_LEN)
-        if got == sigs[n][1]: continue
+        if sig(read(a, SIG_LEN)) == sigs[n][1]: continue
         bad += 1
-        # look for the old bytes elsewhere: the function may just have moved
-        print(f'  X  {n:32} {a:08x}  bytes differ (now {got.hex()})')
+        moved[sigs[n][1]] = n
+        print(f'  X  {n:32} {a:08x}  bytes differ')
+    if moved:   # look for the old bytes elsewhere: the function may just have moved
+        code = read(base + text_rva, text_size)
+        for off in range(len(code) - SIG_LEN + 1):
+            n = moved.get(sig(code[off:off + SIG_LEN]))
+            if n: print(f'  ->  {n:32} same first bytes at {base + text_rva + off:08x}')
     for n, a in data:
         if not (base <= a < base + size_image): bad += 1; print(f'  X  {n:32} {a:08x}  outside the image')
     print(f'{len(funcs)} functions, {len(data)} data addresses: ' + ('all match' if bad == 0 else f'{bad} problem(s)'))

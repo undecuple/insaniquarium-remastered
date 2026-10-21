@@ -62,7 +62,9 @@ Several mods hook the same function (e.g. `Board_BuyItem`, `Coin_MouseDown`); th
    tools/check-game.py popcapgame1.exe
    ```
    It prints the new code hash and, for each function in `game.h`, whether its first 16 bytes still match
-   `tools/signatures.txt` (recorded from the known-good build), plus whether the data addresses still fit the image.
+   `tools/signatures.txt` (a SHA-256 of those bytes, recorded from the known-good build, so the repo carries no game
+   code), plus whether the data addresses still fit the image. A function whose bytes differ is looked up across the
+   new code, and a `->` line gives the address where the same first bytes now are.
 3. **Read the result:**
    - *Different hash, every function and data address matches:* the change is elsewhere (a fix in code no mod touches).
      The addresses are probably still valid, but **field offsets and inlined behaviour aren't covered by the check**.
@@ -70,8 +72,8 @@ Several mods hook the same function (e.g. `Board_BuyItem`, `Coin_MouseDown`); th
      sure none falls inside a function listed above or one they call. Then update `GAME_TEXT_HASH` (and
      `GAME_IMAGE_SIZE` if it changed) in `include/game.h`.
    - *Some functions show `X` (bytes differ):* code moved or changed. Each listed constant has to be found again in the
-     new exe: load it in Ghidra (or any disassembler), find the function by its strings, callers or byte pattern (the
-     old signature from `tools/signatures.txt` usually matches a shifted address), check its arguments and return
+     new exe: load it in Ghidra (or any disassembler), find the function by its strings, callers or byte pattern (a `->`
+     line from check-game.py usually gives the shifted address), check its arguments and return
      (`RET n` gives the argument bytes) and update `game.h`. Then re-check the field offsets each mod reads (listed
      in `game.h`) against the new code.
    - *Data addresses outside the image:* the layout changed a lot; treat it as a new port of every address.
