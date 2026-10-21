@@ -167,6 +167,13 @@ Open an issue (https://github.com/undecuple/insaniquarium-remastered/issues/new/
 Linux / Steam Deck) and `mods/remastered-mod.log` (in co-op, every player's). Please don't attach game files. Security
 problems: report them privately (SECURITY.md).
 
+## How this is made
+The mod is developed by one person with AI coding agents (Anthropic's Claude, run through Claude Code). The agents do
+most of the hands-on work: reading the game's code in a disassembler, writing the mods, tools and documentation, and
+running the builds and the headless test runs under Wine/Proton. The maintainer sets the goals, plays the builds, signs
+off everything that is published, and is responsible for it. None of the game's files are in this repository. If you
+find something here that is wrong, please open an issue.
+
 ## Licence and credits
 Insaniquarium - Remastered Mod is MIT-licensed (LICENSE.txt). It uses [MinHook](https://github.com/TsudaKageyu/minhook)
 (BSD-2-Clause) by Tsuda Kageyu; co-op over Steam uses Valve's Steamworks API. Some of the game's names and layouts were
