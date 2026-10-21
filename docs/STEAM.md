@@ -13,8 +13,8 @@ Consequences for installing:
 - The loader (`ddraw.dll`) has to sit **next to `popcapgame1.exe`**: Windows looks for `ddraw.dll` beside the running
   exe first, then in the system folder, and only then in the current folder (the game folder).
 - `mods/`, the settings and the log stay in the Steam game folder: the core takes it from `-changedir=`.
-- Installers: `tools/install-steam.sh` (Linux/Steam Deck: into the game's Proton prefix, plus a Wine DLL override for
-  `popcapgame1.exe` in that prefix, so no launch options are needed) and `install-steam.bat` (Windows). Both uninstall
+- Installers: `install/install-steam.sh` (Linux/Steam Deck: into the game's Proton prefix, plus a Wine DLL override for
+  `popcapgame1.exe` in that prefix, so no launch options are needed) and `install/install-steam.bat` (Windows). Both uninstall
   too. Player steps: [INSTALL.md](INSTALL.md).
 
 ## Notes

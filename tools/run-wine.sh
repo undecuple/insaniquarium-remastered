@@ -28,7 +28,7 @@ if [ -z "${NOMODS:-}" ]; then   # NOMODS=1: the unmodded game, for comparison
   [ ! -d "$DIST"/mods/coop ] || cp -r "$DIST"/mods/coop "$T/game/mods/"
   [ -z "${TESTMODS:-}" ] || cp build/tests/*.dll "$T/game/mods/"   # TESTMODS=1: also the test-only mods and examples (build.sh --tests)
   # STEAMBUILD=1 (GAME = a copy of the Steam release, PROTON set): the launcher runs the game from ProgramData, so the
-  # loader goes there too, as tools/install-steam.sh does
+  # loader goes there too, as install/install-steam.sh does
   if [ -n "${STEAMBUILD:-}" ]; then
     L="$T/compat/pfx/drive_c/ProgramData/PopCap Games/Insaniquarium"; mkdir -p "$L"; cp "$DIST"/ddraw.dll "$L/"
   fi
@@ -40,7 +40,7 @@ fi
 if [ -n "${INI:-}" ]; then
   python3 - "$T/game/mods/remastered-mod.ini" $INI <<'PY'
 import re, sys
-lines = open('remastered-mod.ini').read().splitlines()
+lines = open('mods/remastered-mod.default.ini').read().splitlines()
 for kv in sys.argv[2:]:
     sk, v = kv.split('=', 1); sec, key = sk.split('.', 1)
     start = next((i for i, l in enumerate(lines) if l.strip() == f'[{sec}]'), None)

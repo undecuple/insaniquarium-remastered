@@ -1,5 +1,5 @@
 # No global line-end normalisation: files are stored as they are meant to be used.
-# install-steam.bat must keep CRLF (cmd.exe misreads a batch file with LF line ends).
+# install/install-steam.bat must keep CRLF (cmd.exe misreads a batch file with LF line ends).
 *.bat -text
 *.png binary
 *.gif binary

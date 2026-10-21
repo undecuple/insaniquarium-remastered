@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Installs Insaniquarium - Remastered Mod (build/dist, or the release folder this script sits in) into the Steam release of Insaniquarium Deluxe (app 3320) on Linux / Steam Deck.
-#   tools/install-steam.sh                 # find the game in your Steam libraries, install
-#   tools/install-steam.sh --uninstall     # remove Insaniquarium - Remastered Mod again
-#   tools/install-steam.sh --game DIR --prefix PFX   # explicit folders (also used by run-wine.sh's STEAMBUILD test)
+#   install/install-steam.sh                 # find the game in your Steam libraries, install
+#   install/install-steam.sh --uninstall     # remove Insaniquarium - Remastered Mod again
+#   install/install-steam.sh --game DIR --prefix PFX   # explicit folders (also used by run-wine.sh's STEAMBUILD test)
 #
 # Why two places: the Steam Insaniquarium.exe is a launcher that writes the game out as
 # <prefix>/drive_c/ProgramData/PopCap Games/Insaniquarium/popcapgame1.exe and starts it there, so the loader

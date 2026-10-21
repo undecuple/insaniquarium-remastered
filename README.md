@@ -29,7 +29,7 @@ Unofficial fan project, not affiliated with PopCap Games or EA. No game files ar
 What's done and planned: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Screenshots
-![The Remastered page](docs/images/remastered-page.png)
+![The Remastered page](docs/screenshots/remastered-page.png)
 
 **The Remastered page** on the main menu: every mod screen. More in [docs/screenshots](docs/screenshots/):
 - [Online co-op](docs/screenshots/coop-online.png): Public Match, Private Match, or join from the list

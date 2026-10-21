@@ -17,7 +17,7 @@ So an update can never crash the game through the mods; at worst the mods silent
   out as `C:\ProgramData\PopCap Games\Insaniquarium\popcapgame1.exe` and starts it with `-changedir=<game folder>`.
   On Linux that folder is inside the game's Proton prefix:
   `steamapps/compatdata/3320/pfx/drive_c/ProgramData/PopCap Games/Insaniquarium/`.
-- The loader (`ddraw.dll`) sits next to `popcapgame1.exe` (`install-steam.bat` / `tools/install-steam.sh` put it
+- The loader (`ddraw.dll`) sits next to `popcapgame1.exe` (`install/install-steam.bat` / `install/install-steam.sh` put it
   there); the mods and settings stay in the Steam folder's `mods\`.
 - Saves: `C:\ProgramData\Steam\Insaniquarium\userdata` (the game's data folder is `ProgramData\<PartnerName>\<ProdName>`,
   and the Steam release's `properties/partner.xml` sets PartnerName to `Steam`; other releases use `PopCap Games`). The

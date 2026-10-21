@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates the ddraw.dll proxy's exports from loader/ddraw.exports (one export per line: name and stdcall argument bytes). Every export becomes
+"""Generates the ddraw.dll proxy's exports from core/ddraw.exports (one export per line: name and stdcall argument bytes). Every export becomes
 a jump through g_real[i], filled at load time from the system's ddraw.dll, except the ones the core implements itself
 (OWN below), which are exported from core.cpp as Own_<name>. For an export the system ddraw.dll lacks, g_missing[i] is a
 stand-in that returns E_NOTIMPL and pops the export's argument bytes (the number after its name).
@@ -9,7 +9,7 @@ import os, sys
 OWN = ('DirectDrawCreate', 'DirectDrawCreateEx')
 EXTRA = {'RemodRelaunch': 16}   # the core's own exports (not DirectDraw): restarting the game through rundll32
 here = os.path.dirname(os.path.abspath(__file__))
-rows = [l.split() for l in open(os.path.join(here, '..', 'loader', 'ddraw.exports')) if l.strip() and not l.startswith('#')]
+rows = [l.split() for l in open(os.path.join(here, '..', 'core', 'ddraw.exports')) if l.strip() and not l.startswith('#')]
 names = [r[0] for r in rows]
 args = {r[0]: int(r[1]) for r in rows}
 out = sys.argv[1]

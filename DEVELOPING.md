@@ -203,21 +203,23 @@ include/remod.h    the mod API (C)
 include/game.h         addresses and offsets in the original exe
 core/core.cpp          the loader/core (ddraw proxy, exe check, hooks, mod loading, API)
 core/display.cpp       the large window ([display]: DirectDraw primary-surface Blt wrapper, mouse mapping, scaled cursors)
-loader/ddraw.exports   the DirectDraw exports the proxy forwards
+core/ddraw.exports     the DirectDraw exports the proxy forwards
 mods/<name>/           one folder per mod
+mods/remastered-mod.default.ini
+                       default settings (the core makes the player's mods/remastered-mod.ini from it and adds new
+                       keys later; kDefaultChanges in core.cpp moves settings still at an old default when a version
+                       changes one)
 tests/<name>/          test-only mods (crashtest; testkit: F9 starve every fish, F10 +5000 shells and level 1-2, F11
                        six coins; K starve one guppy; C click the first corpse; F feed the first guppy while full; B buy a guppy;
                        M +$10000; E buy an egg piece; R determinism probe), built by `build.sh --tests`, installed by `TESTMODS=1 run-wine.sh`
 examples/<name>/       example mods for authors (hello, template), built by `build.sh --tests`; never released
-tools/                 fetch-deps.sh (MinHook), gen-proxy.py (export stubs), run-wine.sh (tests), install-steam.sh,
+tools/                 fetch-deps.sh (MinHook), gen-proxy.py (export stubs), run-wine.sh (tests),
                        package.sh (release zip), release-notes.sh, ci-setup.sh (CI build tools),
                        check-game.py + signatures.txt (checks a game exe against game.h)
 server/                your own co-op server: Nakama + Postgres compose files (docs/SERVER.md)
-install-steam.bat      Windows installer for the Steam release (copied into build/dist)
+install/               the Steam release's installers: install-steam.bat (Windows, copied into build/dist) and
+                       install-steam.sh (Linux / Steam Deck); both go into the release zip
 .github/workflows/      CI: build on every push and pull request, release on a version tag
-remastered-mod.ini          default settings (build/dist/mods/remastered-mod.default.ini: the core makes the player's
-                            remastered-mod.ini from it and adds new keys later; kDefaultChanges in core.cpp moves
-                            settings still at an old default when a version changes one)
 ```
 Third-party: MinHook (BSD-2-Clause, Tsuda Kageyu), downloaded by `tools/fetch-deps.sh`.
 
