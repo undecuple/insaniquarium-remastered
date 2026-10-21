@@ -6,7 +6,6 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE.txt)
 [![Downloads](https://img.shields.io/github/downloads/undecuple/insaniquarium-remastered/total)](https://github.com/undecuple/insaniquarium-remastered/releases)
 ![Platform: Windows, Linux (Proton)](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(Proton)-0078D6)
-[![Ko-fi](https://img.shields.io/badge/support-Ko--fi-FF5E5B)](https://ko-fi.com/P5P615QPPM)
 
 **[Download](https://github.com/undecuple/insaniquarium-remastered/releases/latest)** · **[Install](docs/INSTALL.md)** · **[Status](#status)** ·
 **[Roadmap](docs/ROADMAP.md)** · **[Developing](DEVELOPING.md)** · **[Contributing](CONTRIBUTING.md)**
@@ -175,6 +174,4 @@ substantial portions keep the copyright and permission notice; please credit "In
 undecuple" with a link to this repository. Details: NOTICE.md; citation data: CITATION.cff.
 
 ## Support
-If you enjoy the mod, you can support its development:
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P615QPPM)
+If you enjoy the mod, you can support its development with the Sponsor button at the top of this page.

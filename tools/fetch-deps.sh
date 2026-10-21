@@ -5,10 +5,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 # renovate: datasource=github-tags depName=TsudaKageyu/minhook
 MINHOOK_VERSION=v1.3.4
+MINHOOK_SHA256=1aebeae4ca898330c507860acc2fca2eb335fe446a3a2b8444c3bf8b2660a14e   # of the tag's .tar.gz; update with the version
 D=third_party/minhook
 if [ "$(cat $D/.version 2>/dev/null)" != "$MINHOOK_VERSION" ]; then
   rm -rf "${D:?}" && mkdir -p $D
-  curl -sSLf "https://github.com/TsudaKageyu/minhook/archive/refs/tags/$MINHOOK_VERSION.tar.gz" | tar -xz -C $D --strip-components=1
+  curl -sSLf -o $D/mh.tar.gz "https://github.com/TsudaKageyu/minhook/archive/refs/tags/$MINHOOK_VERSION.tar.gz"
+  echo "$MINHOOK_SHA256  $D/mh.tar.gz" | sha256sum -c --quiet - || { echo "minhook $MINHOOK_VERSION: checksum mismatch, not used" >&2; rm -rf "${D:?}"; exit 1; }
+  tar -xzf $D/mh.tar.gz -C $D --strip-components=1 && rm -f $D/mh.tar.gz
   echo "$MINHOOK_VERSION" > $D/.version
   echo "minhook $MINHOOK_VERSION"
 fi
@@ -17,10 +20,12 @@ fi
 # Valve's redistributable libraries). Optional: without it co-op works by address only.
 # renovate: datasource=github-releases depName=rlabrecque/Steamworks.NET
 STEAMWORKS_NET_VERSION=2025.164.1
+STEAMWORKS_NET_SHA256=9412348cc404563be5a43a28347cfeda3c679ee044a14d87a507ed2d796a537d   # of the standalone .zip; update with the version
 S=third_party/steamworks
 if [ "$(cat $S/.version 2>/dev/null)" != "$STEAMWORKS_NET_VERSION" ]; then
   rm -rf "${S:?}" && mkdir -p $S
-  if curl -sSLf -o $S/sw.zip "https://github.com/rlabrecque/Steamworks.NET/releases/download/$STEAMWORKS_NET_VERSION/Steamworks.NET-Standalone_$STEAMWORKS_NET_VERSION.zip"; then
+  if curl -sSLf -o $S/sw.zip "https://github.com/rlabrecque/Steamworks.NET/releases/download/$STEAMWORKS_NET_VERSION/Steamworks.NET-Standalone_$STEAMWORKS_NET_VERSION.zip" \
+     && echo "$STEAMWORKS_NET_SHA256  $S/sw.zip" | sha256sum -c --quiet -; then
     python3 - $S/sw.zip $S <<'PY'
 import sys, zipfile
 z = zipfile.ZipFile(sys.argv[1])
@@ -32,6 +37,7 @@ PY
     echo "$STEAMWORKS_NET_VERSION" > $S/.version
     echo "steam_api.dll (Steamworks.NET $STEAMWORKS_NET_VERSION)"
   else
-    echo "couldn't download steam_api.dll: co-op over Steam won't be in the build" >&2
+    rm -f $S/sw.zip
+    echo "couldn't download steam_api.dll (or its checksum didn't match): co-op over Steam won't be in the build" >&2
   fi
 fi
