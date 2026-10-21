@@ -29,13 +29,18 @@ Unofficial fan project, not affiliated with PopCap Games or EA. No game files ar
 What's done and planned: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Screenshots
-| | |
-|---|---|
-| ![The Remastered page](docs/images/remastered-page.png) **The Remastered page** on the main menu: every mod screen | ![Online co-op](docs/images/coop-online.png) **Online co-op:** Public Match, Private Match, or join from the list |
-| ![The co-op lobby](docs/images/coop-lobby.png) **The lobby:** avatars, roles, versus, split money | ![Four players in a tank](docs/images/coop-ingame.png) **Four players** in one tank, each with a named pointer |
-| ![Extra Modes](docs/images/extra-modes.png) **Extra Modes:** Daily Challenge, Boss Rush, Endless, Sandbox, Play as Alien | ![Play as Alien](docs/images/play-as-alien.png) **Play as Alien:** steer the alien against a computer keeper |
-| ![Mutators](docs/images/mutators.png) **15 mutators** that change the rules | ![Achievements](docs/images/achievements.png) **31 achievements** with shell rewards |
-| ![The Keys tab](docs/images/keys-page.png) **Every key** can be changed | ![Records](docs/images/records.png) **Records:** your bests and Hall of Fame tables |
+![The Remastered page](docs/images/remastered-page.png)
+
+**The Remastered page** on the main menu: every mod screen. More in [docs/screenshots](docs/screenshots/):
+- [Online co-op](docs/screenshots/coop-online.png): Public Match, Private Match, or join from the list
+- [The lobby](docs/screenshots/coop-lobby.png): avatars, roles, versus, split money
+- [Four players](docs/screenshots/coop-ingame.png) in one tank, each with a named pointer
+- [Extra Modes](docs/screenshots/extra-modes.png): Daily Challenge, Boss Rush, Endless, Sandbox, Play as Alien
+- [Play as Alien](docs/screenshots/play-as-alien.png): steer the alien against a computer keeper
+- [15 mutators](docs/screenshots/mutators.png) that change the rules
+- [31 achievements](docs/screenshots/achievements.png) with shell rewards
+- [Every key](docs/screenshots/keys-page.png) can be changed
+- [Records](docs/screenshots/records.png): your bests and Hall of Fame tables
 
 ## Installing
 You need ***Insaniquarium! Deluxe* from Steam** ([store page](https://store.steampowered.com/app/3320/)), installed
