@@ -47,8 +47,7 @@ You need ***Insaniquarium! Deluxe* from Steam** ([store page](https://store.stea
 and run once, on Windows 10/11 or Linux / Steam Deck (Proton).
 
 1. **[Download](https://github.com/undecuple/insaniquarium-remastered/releases/latest)** the zip and unpack it.
-2. **Windows:** copy `ddraw.dll`, `install-steam.bat` and the `mods` folder into the game folder (Steam → right-click
-   the game → **Manage → Browse local files**) and double-click `install-steam.bat`.
+2. **Windows:** double-click `install-steam.bat` in the unpacked folder (it finds the game in your Steam libraries).
    **Linux / Steam Deck:** run `bash install-steam.sh` in the unpacked folder.
 3. Play from Steam as usual. The title screen says "Insaniquarium - Remastered Mod is on".
 
@@ -121,7 +120,7 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
 | Log says "not the Insaniquarium Deluxe 1.1 game these mods are for" | A different version of the game: Insaniquarium - Remastered Mod stays off on purpose. |
 | Log says "safe mode" | Shift was held while the game started, or `[core] enabled=0`. |
 | A message says a mod "crashed and was switched off" | That mod is off until the next start; the log names it and where it failed. Please report it. |
-| The game doesn't start at all | Remove the loader (Windows: `install-steam.bat uninstall`; Linux: `install-steam.sh --uninstall`) and tell us what the log said (open an issue). |
+| The game doesn't start at all | Remove the loader (Windows: double-click `uninstall-steam.bat`; Linux: `install-steam.sh --uninstall`) and tell us what the log said (open an issue). |
 | On a tiling desktop (niri, sway, Hyprland...) the window is another size, with black bars | The desktop sizes windows itself; the mod leaves its choice alone and scales the game into whatever size it gets. For the whole screen pick **Borderless** (or your desktop's own fullscreen for the window). |
 | The window isn't the size you chose | The game is a large window by default: pick **640x480** or **Borderless** in the Display tab (or `[display] window=normal`, `borderless`); it changes at once. The log says "native window: ..." for Large and Borderless, "display: A -> B" for each change, and "display: switching the game to ..." when the game came up in the other screen mode. |
 | Speed keys do nothing | They only work inside a tank, and the game window must have focus. In co-op only the host changes the speed (for everyone); a guest gets "Only the host controls the speed in co-op". Check the keys in `remastered-mod.ini`. |
@@ -149,6 +148,7 @@ Everything Insaniquarium - Remastered Mod does is written to **`mods/remastered-
 | | |
 |---|---|
 | [docs/INSTALL.md](docs/INSTALL.md) | installing, updating and uninstalling (Windows, Linux, Steam Deck) |
+| [docs/UPGRADING.md](docs/UPGRADING.md) | coming from an older version: what carries over, what to check |
 | [docs/SETTINGS.md](docs/SETTINGS.md) | every setting in `remastered-mod.ini` |
 | [docs/SERVER.md](docs/SERVER.md) | hosting your own co-op server (Docker: Nakama + Postgres, HTTPS) |
 | [docs/STEAM.md](docs/STEAM.md) | how the Steam release runs the game, and co-op over Steam |

@@ -15,7 +15,7 @@ NAME=Insaniquarium-Remastered-Mod-$VER
 R=build/release; D=$R/$NAME
 rm -rf "${D:?}" "$R/$NAME.zip"
 mkdir -p "$D/mods"
-cp build/dist/ddraw.dll build/dist/install-steam.bat install/install-steam.sh "$D/"
+cp build/dist/ddraw.dll build/dist/install-steam.bat build/dist/uninstall-steam.bat install/install-steam.sh "$D/"
 cp build/dist/mods/*.dll build/dist/mods/remastered-mod.default.ini build/dist/mods/remod-files.txt "$D/mods/"
 [ $STEAMAPI = 0 ] || { mkdir -p "$D/mods/coop"; cp third_party/steamworks/steam_api.dll "$D/mods/coop/"; }
 # README.txt: the README without what only works on a web page (the screenshot table, image badges)

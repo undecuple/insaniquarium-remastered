@@ -217,7 +217,7 @@ tools/                 fetch-deps.sh (MinHook), gen-proxy.py (export stubs), run
                        package.sh (release zip), release-notes.sh, ci-setup.sh (CI build tools),
                        check-game.py + signatures.txt (checks a game exe against game.h)
 server/                your own co-op server: Nakama + Postgres compose files (docs/SERVER.md)
-install/               the Steam release's installers: install-steam.bat (Windows, copied into build/dist) and
+install/               the Steam release's installers: install-steam.bat and uninstall-steam.bat (Windows, copied into build/dist) and
                        install-steam.sh (Linux / Steam Deck); both go into the release zip
 .github/workflows/      CI: build on every push and pull request, release on a version tag
 ```

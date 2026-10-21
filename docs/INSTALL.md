@@ -9,7 +9,7 @@ files, and can be undone at any time (see [Uninstalling](#uninstalling)).
 - **The download:** `Insaniquarium-Remastered-Mod-<version>.zip`. Unzip it anywhere you like (right-click →
   *Extract All* on Windows; *Extract here* on Linux). You get this folder:
   ```
-  ddraw.dll   install-steam.bat   install-steam.sh   INSTALL.txt   README.txt   CHANGELOG.txt   LICENSES.txt
+  ddraw.dll   install-steam.bat   uninstall-steam.bat   install-steam.sh   INSTALL.txt   README.txt   CHANGELOG.txt   LICENSES.txt
   mods\       (the mods and their default settings)
   ```
 - Optional: compare the zip with `SHA256SUMS.txt` from the download page (Windows: `certutil -hashfile <zip> SHA256`
@@ -25,17 +25,14 @@ Which part of this guide to follow:
 ---
 
 ## Windows: Steam
-The Steam version starts the real game from a second folder (`C:\ProgramData\PopCap Games\Insaniquarium`), so one
-file has to go there too. A small helper does that.
+The Steam version starts the real game from a second folder (`C:\ProgramData\PopCap Games\Insaniquarium`), so the
+loader has to go there and the mods into the game folder. A small helper does both.
 
-1. In Steam, right-click **Insaniquarium! Deluxe** → **Manage** → **Browse local files**. A folder opens (usually
-   `C:\Program Files (x86)\Steam\steamapps\common\Insaniquarium Deluxe`).
-2. Copy **`ddraw.dll`**, **`install-steam.bat`** and the **`mods`** folder from the unzipped download into that folder.
-   Windows may ask for administrator permission because it's under *Program Files*: click **Continue**.
-3. Double-click **`install-steam.bat`** in that folder. A window says
-   `Insaniquarium - Remastered Mod installed: loader in C:\ProgramData\PopCap Games\Insaniquarium ...`.
-   Press a key to close it.
-4. Start the game from Steam as usual. The title screen says **"Insaniquarium - Remastered Mod is on (16 mods)"**.
+1. In the unzipped download, double-click **`install-steam.bat`**. It finds the game in your Steam libraries, shows
+   the two folders it uses, and ends with `Insaniquarium - Remastered Mod installed`. Press a key to close it.
+   - If it says it couldn't copy the mods, right-click `install-steam.bat` → **Run as administrator**.
+   - If it says the game wasn't found, see its message: you can tell it the game folder with `GAME_DIR`.
+2. Start the game from Steam as usual. The title screen says **"Insaniquarium - Remastered Mod is on (16 mods)"**.
 
 If Windows SmartScreen or your antivirus complains about `ddraw.dll` or the `.bat`: see [Is it safe?](#is-it-safe).
 
@@ -106,6 +103,8 @@ and start it again.
 - **By address:** the co-op screen's **Direct** tab; the host opens TCP port 27615 (or uses a VPN).
 
 ## Updating to a new version
+Coming from a much older version: [UPGRADING.md](UPGRADING.md) lists the few things to check.
+
 Close the game, then install the new version the same way, over the old one (let it replace the files), and run the
 installer again (`install-steam.bat` / `install-steam.sh`: the loader in the second folder has to be updated too).
 - **Your settings are kept.** The zip has no `remastered-mod.ini`, only `remastered-mod.default.ini`: at its next start
@@ -118,10 +117,10 @@ installer again (`install-steam.bat` / `install-steam.sh`: the loader in the sec
 
 ## Uninstalling
 Your profiles keep working without the mod.
-- **Windows, Steam:** in the game folder, open a command prompt (type `cmd` in the folder's address bar and press
-  Enter) and run `install-steam.bat uninstall`. It removes the loader and the mod's own files from `mods` (other mods,
-  your settings and the log stay). Then delete `ddraw.dll` and `install-steam.bat` from the game folder, and `mods` if
-  nothing else is in it.
+- **Windows, Steam:** in the unzipped download, double-click **`uninstall-steam.bat`**. It removes the loader and the
+  mod's own files from the game's `mods` folder (other mods, your settings and the log stay). Delete `mods` in the game
+  folder too if nothing else is in it. Installed the old way (files copied into the game folder)? See
+  [UPGRADING.md](UPGRADING.md) for what else to delete.
 - **Linux/Steam Deck, Steam:** in the unzipped download folder, `bash install-steam.sh --uninstall`: it removes the
   loader and the mod's own files (other mods, your settings and the log stay); delete the game folder's `mods` folder
   if you don't want the settings and log either. Remove the launch option if you set one.

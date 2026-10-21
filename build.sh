@@ -91,4 +91,4 @@ if [ -f third_party/steamworks/steam_api.dll ] && [ -f $O/mods/coop.dll ]; then 
 { echo "version $(sed -n 's/^#define REMOD_VERSION "\(.*\)"/\1/p' include/version.h)"
   (cd $O/mods && LC_ALL=C ls *.dll; [ ! -f coop/steam_api.dll ] || echo 'coop\steam_api.dll'; echo remastered-mod.default.ini)
 } | sed 's/$/\r/' > $O/mods/remod-files.txt
-cp install/install-steam.bat $O/   # Windows installer for the Steam release
+cp install/install-steam.bat install/uninstall-steam.bat $O/   # Windows installer for the Steam release, and its uninstall
