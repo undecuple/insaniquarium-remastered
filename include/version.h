@@ -2,12 +2,21 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.3.0"
+#define REMOD_VERSION "0.4.0"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.4.0", {
+        "Windows: double-click install-steam.bat in the",
+        "  unzipped download: it finds the game in your",
+        "  Steam libraries and copies everything itself.",
+        "Windows: uninstall-steam.bat removes the mod",
+        "  on a double-click.",
+        "Coming from an older version: UPGRADING.md on",
+        "  the project page says what to check.",
+        nullptr } },
     { "0.3.0", {
         "The mod's screens look and sound like the game's",
         "  own; tank messages use the game's message line.",
