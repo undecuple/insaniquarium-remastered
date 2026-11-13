@@ -37,3 +37,6 @@ __pycache__/
 /docs/RELEASE.md
 /.forgejo/
 /tools/publish-release.sh
+
+# fonts and previews for tools/repo_art.py
+/work/

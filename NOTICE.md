@@ -8,6 +8,7 @@
 | [Nakama](https://github.com/heroiclabs/nakama) by Heroic Labs | the co-op server (`server/docker-compose.yml` runs its image); not part of the download | Apache-2.0 |
 | [PostgreSQL](https://www.postgresql.org/) | the co-op server's database (`server/docker-compose.yml`) | PostgreSQL Licence |
 | [WinFish](https://github.com/Vindirect/WinFish) by Vindirect | reference only: a readable decompile of the game that helped identify its classes, fields and functions; no code from it is included | its own terms |
+| [Lilita One](https://github.com/google/fonts/tree/main/ofl/lilitaone) by Juan Montoreano | lettering in the README banner and social preview, drawn by `tools/repo_art.py`; the font is not in the repository or the download | SIL OFL 1.1 |
 
 *Insaniquarium* and *Insaniquarium! Deluxe* are trademarks of PopCap Games / Electronic Arts. This project is not
 affiliated with or endorsed by PopCap Games or EA. It contains no game code, data or assets; nothing here grants
