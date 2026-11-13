@@ -7,7 +7,7 @@ name: insaniquarium-coop
 
 services:
   nakama:
-    image: heroiclabs/nakama:3.41.0
+    image: heroiclabs/nakama:3.42.0
     restart: unless-stopped
     environment:
       DB_ADDRESS: "${POSTGRES_USER:-nakama}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-nakama}?sslmode=disable"
