@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:   # a newer push to the same branch or pull request replaces a run still going
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest

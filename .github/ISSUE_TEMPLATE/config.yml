@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Roadmap
+    url: https://github.com/undecuple/insaniquarium-remastered/blob/main/docs/ROADMAP.md
+    about: Check what is done and planned before asking for a feature.
   - name: Security problem
     url: https://github.com/undecuple/insaniquarium-remastered/security
     about: Report security problems privately (see SECURITY.md), not as an issue.

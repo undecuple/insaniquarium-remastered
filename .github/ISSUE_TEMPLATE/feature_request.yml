@@ -1,0 +1,40 @@
+name: Feature request
+description: An idea for the mod, or a mod you would like to see
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [roadmap](https://github.com/undecuple/insaniquarium-remastered/blob/main/docs/ROADMAP.md) first: it may already be planned. Do **not** attach game files.
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like, and why?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Co-op
+        - Display and window
+        - Controls and keys
+        - Game modes
+        - Accessibility
+        - Settings and mod pages
+        - Making mods (the API)
+        - Installer
+        - Build and tools
+        - Other
+  - type: checkboxes
+    id: gameplay
+    attributes:
+      label: Gameplay
+      options:
+        - label: This would change how the game plays (it would then be an opt-in setting, and in co-op it has to keep everyone's game in step)
+  - type: input
+    id: version
+    attributes:
+      label: Mod version
+      description: "The release number shown on the Remastered page, if this is about the current version."
