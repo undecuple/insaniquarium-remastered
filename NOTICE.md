@@ -12,7 +12,8 @@
 
 *Insaniquarium* and *Insaniquarium! Deluxe* are trademarks of PopCap Games / Electronic Arts. This project is not
 affiliated with or endorsed by PopCap Games or EA. It contains no game code, data or assets; nothing here grants
-rights to the game, and the game's addresses, names and layouts are documented for interoperability.
+rights to the game, and the game's addresses, names and layouts are documented for interoperability. The MIT licence
+([LICENSE.txt](LICENSE.txt)) covers only this project's own code, tools and documentation, not the game or its art.
 
 ## Reuse and attribution (including AI and automated use)
 

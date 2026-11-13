@@ -13,7 +13,7 @@
 [![Downloads](https://img.shields.io/github/downloads/undecuple/insaniquarium-remastered/total)](https://github.com/undecuple/insaniquarium-remastered/releases)
 ![Platform: Linux (Proton) tested, Windows untested](https://img.shields.io/badge/platform-Linux%20(Proton)%20tested%20%7C%20Windows%20untested-0078D6)
 
-**[Download](https://github.com/undecuple/insaniquarium-remastered/releases/latest)** · **[Status](#status)** · **[Features](docs/FEATURES.md)** · **[Install](docs/INSTALL.md)** · **[Screenshots](docs/SCREENSHOTS.md)** · **[Troubleshooting](docs/TROUBLESHOOTING.md)** · **[Roadmap](docs/ROADMAP.md)** · **[Developing](DEVELOPING.md)** · **[Contributing](CONTRIBUTING.md)**
+**[Download](https://github.com/undecuple/insaniquarium-remastered/releases/latest)** · **[Status](#status)** · **[Features](docs/FEATURES.md)** · **[Install](docs/INSTALL.md)** · **[Screenshots](docs/SCREENSHOTS.md)** · **[Troubleshooting](docs/TROUBLESHOOTING.md)** · **[Known issues](KNOWN_ISSUES.md)** · **[Roadmap](docs/ROADMAP.md)** · **[Developing](DEVELOPING.md)** · **[Contributing](CONTRIBUTING.md)**
 <!-- /badges -->
 
 **Mods for the original *Insaniquarium! Deluxe* on Steam:** online co-op for 2-4 players, extra modes, achievements,
@@ -164,6 +164,7 @@ examples/   a template mod and a hello-world mod
 tests/      test-only mods
 tools/      build, packaging, game check, art generator
 docs/       install, features, keys, settings, server, roadmap, game updates
+            (also BUILDING.md, KNOWN_ISSUES.md, CHANGELOG.md and AGENTS.md at the top)
 assets/     README banner and social preview
 ```
 

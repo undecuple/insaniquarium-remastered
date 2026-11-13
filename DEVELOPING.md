@@ -34,7 +34,7 @@ Cross-compiles with 32-bit mingw-w64 (`pkgsCross.mingw32` from nixpkgs; `build.s
 isn't on PATH; on Debian/Ubuntu `tools/ci-setup.sh` installs it). Output DLLs are self-contained (static
 libgcc/libstdc++) and reproducible (no link timestamps).
 
-**Releasing:** bump `REMOD_VERSION` and add the changelog entry in `include/version.h`, commit, then
+**Releasing:** bump `REMOD_VERSION` and add the changelog entry in `include/version.h`, run `tools/changelog-md.py` (it writes `CHANGELOG.md`), commit, then
 `git tag v<version> && git push origin v<version>`: `.github/workflows/release.yml` builds the zip and publishes a
 GitHub release with the zip, `SHA256SUMS.txt` and that version's changelog. Every push and pull request is built by
 `.github/workflows/build.yml` (the zip is kept as an artifact). By hand: `tools/package.sh` (zip + `SHA256SUMS.txt`
@@ -226,6 +226,7 @@ examples/<name>/       example mods for authors (hello, template), built by `bui
 tools/                 fetch-deps.sh (MinHook), gen-proxy.py (export stubs), run-wine.sh (tests),
                        package.sh (release zip), release-notes.sh, ci-setup.sh (CI build tools), host-tests.sh,
                        check-game.py + signatures.txt (checks a game exe against game.h)
+                       changelog-md.py (CHANGELOG.md from include/version.h; --check)
 server/                your own co-op server: Nakama + Postgres compose files (docs/SERVER.md)
 install/               the Steam release's installers: install-steam.bat and uninstall-steam.bat (Windows, copied into build/dist) and
                        install-steam.sh (Linux / Steam Deck); both go into the release zip
