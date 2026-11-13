@@ -20,8 +20,9 @@
 mutators, a large sharp window and more, in the game you already own. Drop a few files into the game folder and play
 as usual. It never changes the game's own files, and removing it is deleting what you added.
 
-Unofficial fan project, not affiliated with or endorsed by PopCap Games or EA. *Insaniquarium* and its art are ©
-PopCap Games / EA. No game files are included: **you need your own copy of the game.**
+Unofficial fan project. This project is not endorsed by or affiliated with EA or its licensors. *Insaniquarium*, its art,
+names and trademarks belong to their owners (© PopCap Games / EA). No game files are included: **you need your own
+licensed copy of the game.**
 
 > **Status: version 0.4.0 (2026-10-21), working on Linux / Steam Deck, not yet tested on a real Windows PC.** Co-op for
 > 2-4 players works through the public server. The table under [Status](#status) says what was tested, and how.
@@ -83,6 +84,8 @@ Nothing, unless you host or join a co-op game. Then:
   match, its listing. A server may log co-op chat lines for moderation.
 
 No updates, no statistics. Your profiles, achievements and records never leave your computer.
+
+What a server stores, what the software can log, and what an operator should tell players: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 ## Where your data goes
 
@@ -166,7 +169,8 @@ assets/     README banner and social preview
 
 ## Licence and credits
 
-MIT (LICENSE.txt). It uses [MinHook](https://github.com/TsudaKageyu/minhook) (BSD-2-Clause) by Tsuda Kageyu; co-op
+MIT (LICENSE.txt), which covers only this project's source, tools and documentation: the game, its content,
+screenshots and trademarks stay with their owners, and a separate licensed copy of the game is required. It uses [MinHook](https://github.com/TsudaKageyu/minhook) (BSD-2-Clause) by Tsuda Kageyu; co-op
 over Steam uses Valve's Steamworks API. Third-party components and credits: [NOTICE.md](NOTICE.md) (in the download:
 LICENSES.txt). *Insaniquarium* and its art belong to PopCap Games; nothing here grants rights to the game.
 

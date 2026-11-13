@@ -27,8 +27,8 @@ FONT = ROOT / "work" / "fonts" / "LilitaOne-Regular.ttf"
 WATER_TOP, WATER_BOT = np.array([22, 102, 122]), np.array([11, 42, 60])   # #16667a -> #0b2a3c
 LIGHT, SAND, CORAL, TEXT = (191, 238, 230), (217, 195, 138), (255, 122, 89), (244, 251, 249)
 
-LINE1, LINE2 = "Insaniquarium", "Remastered Mod"
-SUB = "Mods and online co-op for Insaniquarium! Deluxe"
+LINE1, LINE2 = "Remastered Mod", "for Insaniquarium! Deluxe"
+SUB = "Mods and online co-op. Unofficial fan project."
 FAN = "Unofficial fan project"
 
 
@@ -172,13 +172,13 @@ def make():
     out = {}
     # social preview: 1280x640, title large and centered, nothing smaller than 32 px
     im = paint(1280, 640)
-    im = lettering(im, (40, 120, 1240, 520), [(LINE1, 132, "title"), (LINE2, 96, "title"), (SUB, 36, "sub")])
+    im = lettering(im, (40, 120, 1240, 520), [(LINE1, 128, "title"), (LINE2, 64, "title"), (SUB, 38, "sub")])
     out["social-preview"] = quantize(im)
     # banner: 1280x320 and 2560x640
     for name, s in (("banner", 1), ("banner@2x", 2)):
         im = paint(1280 * s, 320 * s, seed=8)
         im = lettering(im, (60 * s, 38 * s, 1220 * s, 290 * s),
-                       [(LINE1, 84 * s, "title"), (LINE2, 60 * s, "title"), (FAN, 24 * s, "sub")])
+                       [(LINE1, 90 * s, "title"), (LINE2, 46 * s, "title"), (FAN, 24 * s, "sub")])
         out[name] = quantize(im)
     return out
 
