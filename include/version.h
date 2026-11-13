@@ -2,12 +2,20 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.4.0"
+#define REMOD_VERSION "0.4.1"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.4.1", {
+        "Nothing changes in play. Co-op only joins the",
+        "  same version: update together with friends.",
+        "The co-op and settings code now has automatic",
+        "  tests.",
+        "The project page has a privacy page: what goes",
+        "  online and where your data goes.",
+        nullptr } },
     { "0.4.0", {
         "Windows: double-click install-steam.bat in the",
         "  unzipped download: it finds the game in your",
