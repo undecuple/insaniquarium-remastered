@@ -3,10 +3,10 @@
 # the word filter) compiled for this machine with its own compiler, no Windows, Wine or game needed. CI runs this.
 # UBSan is always on. AddressSanitizer is opt-in (HOST_ASAN=1): GCC 12's runtime can loop forever in
 # "AddressSanitizer:DEADLYSIGNAL" on some CI kernels, so CI does not use it. Every run is limited to 60 seconds.
-#   tools/host-tests.sh              # uses $CXX_HOST or c++; HOST_ASAN=1 adds AddressSanitizer
+#   tools/host-tests.sh              # uses $CXX_HOST, else c++, g++ or clang++; HOST_ASAN=1 adds AddressSanitizer
 set -euo pipefail
 cd "$(dirname "$0")/.."
-cxx="${CXX_HOST:-c++}"
+cxx="${CXX_HOST:-$(command -v c++ || command -v g++ || command -v clang++ || echo c++)}"
 out="$(mktemp -d)"
 trap 'rm -rf "$out"' EXIT
 fail=0

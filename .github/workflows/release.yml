@@ -17,6 +17,7 @@ concurrency:   # one release run per tag; a run in progress is never cancelled
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 20   # a stuck step ends the run instead of holding it
     container:
       image: node:24-bookworm
     steps:

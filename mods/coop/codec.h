@@ -1,6 +1,6 @@
 // The co-op code that needs no Windows: JSON, base64, URLs and room codes, shared by online.cpp and the host tests
-// (hosttests/, run by tools/host-tests.sh). Moved here unchanged from online.cpp; nothing in it touches the network
-// or the game.
+// (hosttests/, run by tools/host-tests.sh). Moved here from online.cpp unchanged, except that Url::port is an unsigned
+// short (INTERNET_PORT is the same type); nothing in it touches the network or the game.
 #pragma once
 #include <ctype.h>
 #include <stdint.h>
