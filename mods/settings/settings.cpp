@@ -372,7 +372,7 @@ static void DrawSettings(void* g)
     {
         int y = TabY + 54;
         api->draw_text_font(g, f12, "Insaniquarium - Remastered Mod " REMOD_VERSION, CX, y, ui::Gold);
-        y = ui::WrapText(api, g, f10, "An unofficial fan mod for Insaniquarium! Deluxe 1.1, not affiliated with PopCap Games or EA.", CX, y + 18, CW, ui::White) + 6;
+        y = ui::WrapText(api, g, f10, "An unofficial fan mod for Insaniquarium! Deluxe 1.1, not endorsed by or affiliated with EA or its licensors.", CX, y + 18, CW, ui::White) + 6;
         int coopKey = api->config_int("coop", "open_key", VK_F7);
         std::string keys = (openKey ? ui::KeyName(openKey) + ": these settings (anywhere but co-op).  " : "") +
                            (coopKey ? ui::KeyName(coopKey) + ": co-op (on the main menu).  " : "") + "Every key: the Keys tab.";
