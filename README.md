@@ -134,6 +134,9 @@ Done: co-op, extra modes, the window and display work, the settings and mod page
 
 - **[WinFish](https://github.com/Vindirect/WinFish)** by Vindirect: a readable decompile of the game that helped
   identify its classes and functions. Reference only; none of its code is included.
+- **[OpenInsaniquarium](https://github.com/elgreams/OpenInsaniquarium)** by elgreams: an open-source reimplementation of
+  the game in Rust, separate from this mod and not affiliated with it. How the two relate:
+  [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 
 ## Official channels
 
