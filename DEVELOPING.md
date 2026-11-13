@@ -52,7 +52,7 @@ merging. Security alerts for dependencies are switched on in the repository's se
 ```sh
 tools/host-tests.sh          # builds hosttests/*_test.cpp with the machine's own compiler (CXX_HOST=g++ to choose), runs them
 ```
-The mod's pure logic is tested natively, with AddressSanitizer and UBSan: JSON, base64, URL and room-code handling
+The mod's pure logic is tested natively, with UBSan (`HOST_ASAN=1` adds AddressSanitizer; CI leaves it off): JSON, base64, URL and room-code handling
 (`mods/coop/codec.h`), the settings-migration version comparison (`core/versions.h`) and the word filter
 (`mods/coop/wordfilter.cpp`). Code that needs no Windows API belongs in a header like these so a test can include it.
 CI runs the host tests on every push. Anything that touches the game still needs the runner below.
