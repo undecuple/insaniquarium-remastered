@@ -28,10 +28,7 @@ licensed copy of the game.**
 > 2-4 players works through the public server. The table under [Status](#status) says what was tested, and how.
 
 <!-- badges -->
-<p align="center">
-  <a href="docs/SCREENSHOTS.md"><img src="docs/screenshots/remastered-page.png" width="720" alt="The Remastered page on the game's main menu, with a button for each mod screen"></a><br>
-  <sub>The Remastered page on the main menu. More: <a href="docs/SCREENSHOTS.md">screenshots</a>. Game imagery © PopCap Games / EA.</sub>
-</p>
+See the mod's screens in [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) (the pictures show the game, © PopCap Games / EA).
 <!-- /badges -->
 
 ## Status

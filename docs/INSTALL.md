@@ -1,19 +1,19 @@
 # Installing Insaniquarium - Remastered Mod
 
-Step-by-step, for Windows and Linux (including Steam Deck). It takes a few minutes, changes none of the game's own
-files, and can be undone at any time (see [Uninstalling](#uninstalling)).
+Step by step, for Windows and Linux (including Steam Deck). It takes a few minutes. It changes none of the game's own
+files, and you can undo it at any time (see [Uninstalling](#uninstalling)).
 
 ## Before you start
 - **Your game:** *Insaniquarium! Deluxe* from **Steam** ([store page](https://store.steampowered.com/app/3320/)),
   version 1.1 (shown on the right of the title screen). With any other build the mod simply stays off.
-- **The download:** `Insaniquarium-Remastered-Mod-<version>.zip`. Unzip it anywhere you like (right-click →
-  *Extract All* on Windows; *Extract here* on Linux). You get this folder:
+- **The download:** `Insaniquarium-Remastered-Mod-<version>.zip`. Unzip it anywhere you like: right-click →
+  *Extract All* on Windows, *Extract here* on Linux. You should see this folder:
   ```
   ddraw.dll   install-steam.bat   uninstall-steam.bat   install-steam.sh   INSTALL.txt   README.txt   CHANGELOG.txt   LICENSES.txt
   mods\       (the mods and their default settings)
   ```
-- Optional: compare the zip with `SHA256SUMS.txt` from the download page (Windows: `certutil -hashfile <zip> SHA256`
-  in a command prompt; Linux: `sha256sum <zip>`).
+- Optional: check the zip against `SHA256SUMS.txt` from the download page. On Windows, run
+  `certutil -hashfile <zip> SHA256` in a command prompt. On Linux, run `sha256sum <zip>`. The two numbers must match.
 
 Which part of this guide to follow:
 
@@ -25,37 +25,38 @@ Which part of this guide to follow:
 ---
 
 ## Windows: Steam
-The Steam version starts the real game from a second folder (`C:\ProgramData\PopCap Games\Insaniquarium`), so the
-loader has to go there and the mods into the game folder. A small helper does both.
+The Steam version starts the real game from a second folder (`C:\ProgramData\PopCap Games\Insaniquarium`). The
+loader has to go there, and the mods go into the game folder. A small helper does both.
 
-1. In the unzipped download, double-click **`install-steam.bat`**. It finds the game in your Steam libraries, shows
-   the two folders it uses, and ends with `Insaniquarium - Remastered Mod installed`. Press a key to close it.
+1. In the unzipped download, double-click **`install-steam.bat`**. It finds the game in your Steam libraries and
+   shows the two folders it uses. You should see `Insaniquarium - Remastered Mod installed`. Press a key to close it.
    - If it says it couldn't copy the mods, right-click `install-steam.bat` → **Run as administrator**.
    - If it says the game wasn't found, see its message: you can tell it the game folder with `GAME_DIR`.
-2. Start the game from Steam as usual. The title screen says **"Insaniquarium - Remastered Mod is on (16 mods)"**.
+2. Start the game from Steam as usual. You should see **"Insaniquarium - Remastered Mod is on (16 mods)"** on the
+   title screen.
 
 If Windows SmartScreen or your antivirus complains about `ddraw.dll` or the `.bat`: see [Is it safe?](#is-it-safe).
 
 ---
 
 ## Linux and Steam Deck: Steam
-The game runs through Proton. The helper script puts the mod in the game folder, the loader into the game's Proton
-folder, and tells Proton to use it, so nothing has to be set in Steam.
+The game runs through Proton. The helper script puts the mod in the game folder and the loader into the game's Proton
+folder. It also tells Proton to use the loader, so you set nothing in Steam.
 
-1. **Run the game once** from Steam, get to the title screen, and quit. (This creates its Proton folder. If Steam
-   doesn't offer to play it, pick a Proton version in the game's **Properties → Compatibility**.)
+1. **Run the game once** from Steam, get to the title screen, and quit. This creates its Proton folder. If Steam
+   doesn't offer to play it, pick a Proton version in the game's **Properties → Compatibility**.
 2. **Steam Deck only:** hold the power button → **Switch to Desktop**.
-3. Open the unzipped download folder in your file manager, right-click an empty spot → **Open Terminal Here**
-   (Steam Deck: Dolphin → *Tools*/right-click → **Open Terminal Here**, or start *Konsole* and `cd` into the folder).
+3. Open the unzipped download folder in your file manager. Right-click an empty spot → **Open Terminal Here**.
+   On a Steam Deck, use Dolphin → *Tools* or right-click → **Open Terminal Here**. Or start *Konsole* and `cd` into the folder.
 4. Run:
    ```sh
    bash install-steam.sh
    ```
-   It finds the game in your Steam libraries (normal Steam, the Flatpak version and extra library folders on other
-   drives or the SD card) and ends with `installed. Start the game from Steam as usual`.
+   It finds the game in your Steam libraries: normal Steam, the Flatpak version, and extra library folders on other
+   drives or the SD card. You should see `installed. Start the game from Steam as usual`.
    If it says the game wasn't found, tell it where Steam is: `STEAM_DIR=/path/to/Steam bash install-steam.sh`.
-5. Start the game from Steam (Steam Deck: you can go back to Gaming Mode). The title screen says
-   **"Insaniquarium - Remastered Mod is on (16 mods)"**.
+5. Start the game from Steam. On a Steam Deck you can go back to Gaming Mode first. You should see
+   **"Insaniquarium - Remastered Mod is on (16 mods)"** on the title screen.
 
 **If the message doesn't appear:** in Steam, right-click the game → **Properties** → **General** → **Launch Options**,
 enter
@@ -105,11 +106,11 @@ and start it again.
 ## Updating to a new version
 Coming from a much older version: [UPGRADING.md](UPGRADING.md) lists the few things to check.
 
-Close the game, then install the new version the same way, over the old one (let it replace the files), and run the
-installer again (`install-steam.bat` / `install-steam.sh`: the loader in the second folder has to be updated too).
-- **Your settings are kept.** The zip has no `remastered-mod.ini`, only `remastered-mod.default.ini`: at its next start
-  the game adds the settings the new version brought to your own file and keeps your values. A setting you never
-  changed moves to a new default when a version changes one (the log says which).
+Close the game. Unzip the new version over the old one and let it replace the files. Then run the installer again
+(`install-steam.bat` or `install-steam.sh`), because the loader in the second folder has to be updated too.
+- **Your settings are kept.** The zip has no `remastered-mod.ini`, only `remastered-mod.default.ini`. At the next
+  start the mod adds the settings the new version brought to your own file, and keeps your values. A setting you never
+  changed moves to a new default when a version changes one. The log says which.
 - **Files a new version dropped are removed** at the next start (from `mods/remod-files.txt`); other mods in `mods\`
   are never touched.
 - If the loader and the mods don't match (the installer wasn't run again), the title screen says so.
@@ -141,7 +142,7 @@ The save backup (`userdata-before-remastered-mod`) can be deleted once you're ha
 | Co-op says "too many lobbies for this account" | Only older versions of the mod: update. The game now clears its own old listings by itself. |
 | The screensaver closes straight away | Moving the mouse or pressing a key ends it, as any screensaver; keep still for a second after starting it. The log says how it ended (`screensaver: ended after ...`). |
 
-More in the README's *Troubleshooting* section.
+More: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Is it safe?
 The mod is a set of DLLs that run inside the game, like most game mods; it never changes the game's own files.
