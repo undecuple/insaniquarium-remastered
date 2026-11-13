@@ -7,13 +7,16 @@
 # Insaniquarium - Remastered Mod
 
 <!-- badges -->
-[![Build](https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml/badge.svg)](https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml)
-[![Latest release](https://img.shields.io/github/v/release/undecuple/insaniquarium-remastered)](https://github.com/undecuple/insaniquarium-remastered/releases/latest)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE.txt)
-[![Downloads](https://img.shields.io/github/downloads/undecuple/insaniquarium-remastered/total)](https://github.com/undecuple/insaniquarium-remastered/releases)
-![Platform: Linux (Proton) tested, Windows untested](https://img.shields.io/badge/platform-Linux%20(Proton)%20tested%20%7C%20Windows%20untested-0078D6)
-
-**[Download](https://github.com/undecuple/insaniquarium-remastered/releases/latest)** · **[Status](#status)** · **[Features](docs/FEATURES.md)** · **[Install](docs/INSTALL.md)** · **[Screenshots](docs/SCREENSHOTS.md)** · **[Troubleshooting](docs/TROUBLESHOOTING.md)** · **[Known issues](KNOWN_ISSUES.md)** · **[Roadmap](docs/ROADMAP.md)** · **[Developing](DEVELOPING.md)** · **[Contributing](CONTRIBUTING.md)**
+<p align="center">
+  <a href="https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml"><img src="https://github.com/undecuple/insaniquarium-remastered/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/undecuple/insaniquarium-remastered/releases/latest"><img src="https://img.shields.io/github/v/release/undecuple/insaniquarium-remastered" alt="Latest release"></a>
+  <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  <a href="https://github.com/undecuple/insaniquarium-remastered/releases"><img src="https://img.shields.io/github/downloads/undecuple/insaniquarium-remastered/total" alt="Downloads"></a>
+  <img src="https://img.shields.io/badge/platform-Linux%20(Proton)%20tested%20%7C%20Windows%20untested-0078D6" alt="Platform: Linux (Proton) tested, Windows untested">
+</p>
+<p align="center">
+  <a href="https://github.com/undecuple/insaniquarium-remastered/releases/latest">Download</a> · <a href="#status">Status</a> · <a href="docs/FEATURES.md">Features</a> · <a href="docs/INSTALL.md">Install</a> · <a href="docs/SCREENSHOTS.md">Screenshots</a> · <a href="docs/TROUBLESHOOTING.md">Troubleshooting</a> · <a href="KNOWN_ISSUES.md">Known issues</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="DEVELOPING.md">Developing</a> · <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 <!-- /badges -->
 
 **Mods for the original *Insaniquarium! Deluxe* on Steam:** online co-op for 2-4 players, extra modes, achievements,
