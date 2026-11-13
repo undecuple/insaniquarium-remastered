@@ -23,6 +23,8 @@ jobs:
         run: tools/ci-setup.sh
       - name: Build
         run: ./build.sh --tests
+      - name: Host tests
+        run: tools/host-tests.sh
       - name: Package
         run: |
           git config --global --add safe.directory "$PWD"

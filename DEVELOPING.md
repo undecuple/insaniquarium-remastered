@@ -48,6 +48,15 @@ comments). The CI image (`node:24-bookworm`) stays put on purpose: it fixes the 
 reproducible. Nothing merges itself: the build workflow checks each pull request; try the build in the game before
 merging. Security alerts for dependencies are switched on in the repository's settings (no file needed).
 
+## Host tests (no Windows, Wine or game)
+```sh
+tools/host-tests.sh          # builds hosttests/*_test.cpp with the machine's own compiler (CXX_HOST=g++ to choose), runs them
+```
+The mod's pure logic is tested natively, with AddressSanitizer and UBSan: JSON, base64, URL and room-code handling
+(`mods/coop/codec.h`), the settings-migration version comparison (`core/versions.h`) and the word filter
+(`mods/coop/wordfilter.cpp`). Code that needs no Windows API belongs in a header like these so a test can include it.
+CI runs the host tests on every push. Anything that touches the game still needs the runner below.
+
 ## Testing without Windows
 ```sh
 GAME=/path/to/Insaniquarium tools/run-wine.sh wait:20 focus click:305:430 wait:4 click:388:206 wait:3 click:305:430 wait:5 \
@@ -209,12 +218,13 @@ mods/remastered-mod.default.ini
                        default settings (the core makes the player's mods/remastered-mod.ini from it and adds new
                        keys later; kDefaultChanges in core.cpp moves settings still at an old default when a version
                        changes one)
+hosttests/            native tests of the pure logic (tools/host-tests.sh)
 tests/<name>/          test-only mods (crashtest; testkit: F9 starve every fish, F10 +5000 shells and level 1-2, F11
                        six coins; K starve one guppy; C click the first corpse; F feed the first guppy while full; B buy a guppy;
                        M +$10000; E buy an egg piece; R determinism probe), built by `build.sh --tests`, installed by `TESTMODS=1 run-wine.sh`
 examples/<name>/       example mods for authors (hello, template), built by `build.sh --tests`; never released
 tools/                 fetch-deps.sh (MinHook), gen-proxy.py (export stubs), run-wine.sh (tests),
-                       package.sh (release zip), release-notes.sh, ci-setup.sh (CI build tools),
+                       package.sh (release zip), release-notes.sh, ci-setup.sh (CI build tools), host-tests.sh,
                        check-game.py + signatures.txt (checks a game exe against game.h)
 server/                your own co-op server: Nakama + Postgres compose files (docs/SERVER.md)
 install/               the Steam release's installers: install-steam.bat and uninstall-steam.bat (Windows, copied into build/dist) and

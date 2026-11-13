@@ -19,6 +19,7 @@
 #include "version.h"
 #include "game.h"
 #include "display.h"
+#include "versions.h"
 
 extern "C" void* g_real[];
 extern "C" void* const g_missing[];   // per-export E_NOTIMPL stand-ins with the right stack cleanup
@@ -956,14 +957,6 @@ const DefaultChange kDefaultChanges[] = {
     { "0.3.0", "accessibility", "hungry", "1", "0" },       // accessibility marks off by default (Gameplay tab)
     { "0.3.0", "accessibility", "coins", "1", "0" },
 };
-bool VersionLess(const std::string& a, const std::string& b)
-{
-    int x[3] = {}, y[3] = {};
-    sscanf(a.c_str(), "%d.%d.%d", &x[0], &x[1], &x[2]);
-    sscanf(b.c_str(), "%d.%d.%d", &y[0], &y[1], &y[2]);
-    for (int i = 0; i < 3; i++) if (x[i] != y[i]) return x[i] < y[i];
-    return false;
-}
 
 // the player's settings: made from the defaults the first time; later, settings a new version added are appended to
 // their sections (with their comments), defaults a version changed are moved on where the player kept the old one, and
