@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/platform-Linux%20(Proton)%20tested%20%7C%20Windows%20untested-0078D6" alt="Platform: Linux (Proton) tested, Windows untested">
 </p>
 <p align="center">
-  <a href="https://github.com/undecuple/insaniquarium-remastered/releases/latest">Download</a> · <a href="#status">Status</a> · <a href="docs/FEATURES.md">Features</a> · <a href="docs/INSTALL.md">Install</a> · <a href="docs/SCREENSHOTS.md">Screenshots</a> · <a href="docs/TROUBLESHOOTING.md">Troubleshooting</a> · <a href="KNOWN_ISSUES.md">Known issues</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="DEVELOPING.md">Developing</a> · <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="https://github.com/undecuple/insaniquarium-remastered/releases/latest">Download</a> · <a href="#status">Status</a> · <a href="docs/FEATURES.md">Features</a> · <a href="docs/INSTALL.md">Install</a> · <a href="docs/SCREENSHOTS.md">Screenshots</a> · <a href="docs/TROUBLESHOOTING.md">Troubleshooting</a> · <a href="KNOWN_ISSUES.md">Known issues</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="DEVELOPING.md">Developing</a> · <a href="https://discord.gg/W8fMT78Q7k">Discord</a> · <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 <!-- /badges -->
 
@@ -144,8 +144,10 @@ Done: co-op, extra modes, the window and display work, the settings and mod page
 
 ## Official channels
 
-The only places that speak for this project are this repository's [releases](https://github.com/undecuple/insaniquarium-remastered/releases)
-and [issues](https://github.com/undecuple/insaniquarium-remastered/issues) (github.com/undecuple). Check where a download came from.
+This repository's [releases](https://github.com/undecuple/insaniquarium-remastered/releases) and
+[issues](https://github.com/undecuple/insaniquarium-remastered/issues) (github.com/undecuple) are where the project
+speaks, and the only place to get a download. To chat, ask for help or play-test, join the unofficial fan community on
+the [undecuple Discord server](https://discord.gg/W8fMT78Q7k): this mod has its own forum there. Check where a download came from.
 
 ## Contributing
 
