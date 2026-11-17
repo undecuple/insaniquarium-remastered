@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20   # a stuck step ends the run instead of holding it for hours
     container:
-      image: node:24-bookworm   # Debian's mingw-w64 (GCC 12): the same tools as every release, so builds are reproducible
+      image: node:24-bookworm@sha256:9d266751ca3d7fdbe651c878ffd5ad0a42fed49a18c283509267c97f025b7496   # Debian's mingw-w64 (GCC 12), pinned by digest: the same tools as every release, so builds are reproducible
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install the build tools

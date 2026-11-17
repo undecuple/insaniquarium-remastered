@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: write   # to create the release
     container:
-      image: node:24-bookworm
+      image: node:24-bookworm@sha256:9d266751ca3d7fdbe651c878ffd5ad0a42fed49a18c283509267c97f025b7496   # pinned by digest, the same image as build.yml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install the build tools
@@ -30,6 +30,8 @@ jobs:
           v=$(sed -n 's/^#define REMOD_VERSION "\(.*\)"/\1/p' include/version.h)
           [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME doesn't match REMOD_VERSION $v"; exit 1; }
           echo "VERSION=$v" >> "$GITHUB_ENV"
+      - name: Host tests
+        run: tools/host-tests.sh
       - name: Build and package
         run: |
           git config --global --add safe.directory "$PWD"
