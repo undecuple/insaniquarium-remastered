@@ -16,6 +16,10 @@ What does not work yet, or works only in some places. For fixing a problem, see
   updated.
 - **Co-op needs the same mod version for every player.** Version 0.4.1 and 0.4.2 players cannot play together. The
   online list shows each match's version and greys out the ones you cannot join.
+- **The public co-op server is open, and names are not checked.** There are no accounts or passwords: anyone with the mod
+  can join and pick any display name, and a name does not show who is behind it. Match names, versions and codes come
+  from other players' games. To report abuse or ask for your data to be deleted, see the
+  [privacy page](docs/PRIVACY.md#the-public-server).
 - **Co-op over Steam needs Valve's `steam_api.dll`.** It is not in the download. The mod usually finds a copy in
   another Steam game ([docs/STEAM.md](docs/STEAM.md)).
 - **HD sprites are not planned.** The game draws in 640x480; the large window scales that picture up.

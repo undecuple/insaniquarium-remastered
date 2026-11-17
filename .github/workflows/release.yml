@@ -7,8 +7,7 @@ on:
   push:
     tags: ['v*']
 
-permissions:
-  contents: write   # to create the release
+permissions: {}   # nothing by default; the job below asks for what it needs
 
 concurrency:   # one release run per tag; a run in progress is never cancelled
   group: release-${{ github.ref }}
@@ -18,6 +17,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 20   # a stuck step ends the run instead of holding it
+    permissions:
+      contents: write   # to create the release
     container:
       image: node:24-bookworm
     steps:

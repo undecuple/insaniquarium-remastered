@@ -10,6 +10,7 @@ you host or join a co-op game.
   computer.
 - **Co-op** connects to the address you typed (the host opens TCP port 27615), to Steam's lobbies and relay, or to a
   co-op server (the Online tab). The server is set in `[coop]` in `mods/remastered-mod.ini` (`server_host`; empty means the mod's public server).
+  In a **Direct** game the players connect to each other, so they see each other's IP address (the host's, for guests).
 - **Your game's anonymous id.** Online co-op logs in with a random device id the game makes on first use
   (`[coop] device=`). There is no sign-up and no password.
 
@@ -37,9 +38,27 @@ you host or join a co-op game.
   WebSocket connection.
 - **Honour requests.** Nakama's console can export and delete an account.
 
+## The public server
+
+The server the mod uses when `server_host` is empty is run by the owner of this project (the GitHub account that
+publishes this repository). It is a hobby server, with no promise that it stays up. This is how long it keeps things:
+
+| What | Kept for |
+|---|---|
+| Accounts (device id, display name, dates) | 30 days after creation; the daily cleanup removes them (the cleanup's default) |
+| Match listings | while the match is open, at most one day |
+| Proxy access logs (IP addresses) | 14 days |
+
+The server has no passwords: anyone with the mod can make an account and pick any display name, and a name does not
+prove who is behind it ([KNOWN_ISSUES.md](../KNOWN_ISSUES.md)).
+
+**To ask about your data or have an account deleted:** on this repository's **Security** tab choose **Report a
+vulnerability** (it is private, so you can include your device id from `[coop] device=` in your `mods/remastered-mod.ini`).
+Use the same way to report abuse. Please don't post your device id in a public issue. You get an answer within a week.
+
 ## Using someone else's server
 
 Check who runs it and what they say. With `server_host` empty the mod uses its public server; the **Server** and **Direct** tabs of the co-op screen
 let you use your own server or none.
 
-Questions about this page: open an issue. Security problems: [SECURITY.md](../SECURITY.md).
+Questions about this page: open an issue. Requests about your data and security problems: [SECURITY.md](../SECURITY.md).

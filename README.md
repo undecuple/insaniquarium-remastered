@@ -36,11 +36,12 @@ See the mod's screens in [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) (the picture
 
 ## Status
 
-Tested on version 0.4.0 (2026-10-21); 0.4.1 changes no behaviour and 0.4.2 only the About text:
+Tested on version 0.4.0 (2026-10-21) unless a row says otherwise; 0.4.1 changes no behaviour and 0.4.2 only the About text:
 
 | | |
 |---|---|
 | Steam release on Linux / Steam Deck (Proton) | works: tested with Proton-GE and with the Steam client's own Proton |
+| Start-up and the settings page of the published 0.4.2 zip, under Wine on Linux | works: tested 2026-11-17 (start-up, main menu, settings, no crash; not a co-op or play test) |
 | Windows 10/11 | built for it, not yet tested on a real Windows PC: reports are welcome |
 | Online co-op (the public server) | works, 2-4 players (tested with four games at once) |
 | Co-op over Steam | works; not yet tested between two Steam accounts |
