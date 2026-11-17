@@ -3,6 +3,17 @@
 What changed in each version, newest first. Generated from `include/version.h` by `tools/changelog-md.py`:
 edit it there, not here. Co-op only joins players on the same version.
 
+## 0.4.2
+
+- Nothing changes in play. The About page
+  now says plainly that this is an unofficial
+  fan project, not endorsed by or affiliated
+  with EA or its licensors.
+- Co-op only joins the same version: update
+  together with friends.
+- The project page has install and troubleshooting
+  guides, known issues and a changelog.
+
 ## 0.4.1
 
 - Nothing changes in play. Co-op only joins the

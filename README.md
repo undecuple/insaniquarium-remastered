@@ -27,7 +27,7 @@ Unofficial fan project. This project is not endorsed by or affiliated with EA or
 names and trademarks belong to their owners (© PopCap Games / EA). No game files are included: **you need your own
 licensed copy of the game.**
 
-> **Status: version 0.4.1 (2026-11-13), working on Linux / Steam Deck, not yet tested on a real Windows PC.** Co-op for
+> **Status: version 0.4.2 (2026-11-17), working on Linux / Steam Deck, not yet tested on a real Windows PC.** Co-op for
 > 2-4 players works through the public server. The table under [Status](#status) says what was tested, and how.
 
 <!-- badges -->
@@ -36,7 +36,7 @@ See the mod's screens in [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) (the picture
 
 ## Status
 
-Tested on version 0.4.0 (2026-10-21); 0.4.1 changes no behaviour:
+Tested on version 0.4.0 (2026-10-21); 0.4.1 changes no behaviour and 0.4.2 only the About text:
 
 | | |
 |---|---|

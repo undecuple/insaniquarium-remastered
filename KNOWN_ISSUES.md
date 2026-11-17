@@ -14,7 +14,7 @@ What does not work yet, or works only in some places. For fixing a problem, see
 - **Only one build of the game.** The mod checks the game's code when it starts and stays off with any other version
   ([docs/GAME-UPDATES.md](docs/GAME-UPDATES.md)). If Steam updates the game, the game runs as normal until the mod is
   updated.
-- **Co-op needs the same mod version for every player.** Version 0.4.0 and 0.4.1 players cannot play together. The
+- **Co-op needs the same mod version for every player.** Version 0.4.1 and 0.4.2 players cannot play together. The
   online list shows each match's version and greys out the ones you cannot join.
 - **Co-op over Steam needs Valve's `steam_api.dll`.** It is not in the download. The mod usually finds a copy in
   another Steam game ([docs/STEAM.md](docs/STEAM.md)).

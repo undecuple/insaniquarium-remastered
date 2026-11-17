@@ -2,12 +2,22 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.4.1"
+#define REMOD_VERSION "0.4.2"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.4.2", {
+        "Nothing changes in play. The About page",
+        "  now says plainly that this is an unofficial",
+        "  fan project, not endorsed by or affiliated",
+        "  with EA or its licensors.",
+        "Co-op only joins the same version: update",
+        "  together with friends.",
+        "The project page has install and troubleshooting",
+        "  guides, known issues and a changelog.",
+        nullptr } },
     { "0.4.1", {
         "Nothing changes in play. Co-op only joins the",
         "  same version: update together with friends.",
