@@ -13,6 +13,7 @@
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
   <a href="https://github.com/undecuple/insaniquarium-remastered/releases"><img src="https://img.shields.io/github/downloads/undecuple/insaniquarium-remastered/total" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/platform-Linux%20(Proton)%20tested%20%7C%20Windows%20untested-0078D6" alt="Platform: Linux (Proton) tested, Windows untested">
+  <a href="https://discord.gg/W8fMT78Q7k"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord: join"></a>
 </p>
 <p align="center">
   <a href="https://github.com/undecuple/insaniquarium-remastered/releases/latest">Download</a> · <a href="#status">Status</a> · <a href="docs/FEATURES.md">Features</a> · <a href="docs/INSTALL.md">Install</a> · <a href="docs/SCREENSHOTS.md">Screenshots</a> · <a href="docs/TROUBLESHOOTING.md">Troubleshooting</a> · <a href="KNOWN_ISSUES.md">Known issues</a> · <a href="docs/ROADMAP.md">Roadmap</a> · <a href="DEVELOPING.md">Developing</a> · <a href="https://discord.gg/W8fMT78Q7k">Discord</a> · <a href="CONTRIBUTING.md">Contributing</a>
@@ -148,6 +149,10 @@ This repository's [releases](https://github.com/undecuple/insaniquarium-remaster
 [issues](https://github.com/undecuple/insaniquarium-remastered/issues) (github.com/undecuple) are where the project
 speaks, and the only place to get a download. To chat, ask for help or play-test, join the unofficial fan community on
 the [undecuple Discord server](https://discord.gg/W8fMT78Q7k): this mod has its own forum there. Check where a download came from.
+
+<!-- badges -->
+[![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/W8fMT78Q7k)
+<!-- /badges -->
 
 ## Contributing
 
