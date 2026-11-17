@@ -43,7 +43,8 @@ copy of the game. More: [README.md](README.md), [DEVELOPING.md](DEVELOPING.md), 
   input or ticks. Read *Mods and co-op* in [DEVELOPING.md](DEVELOPING.md) before touching gameplay.
 - **Online is opt-in.** Nothing contacts a network unless the player hosts or joins a game or sets a server. A new
   connection is added to "What goes online" in the README and to [docs/PRIVACY.md](docs/PRIVACY.md) in the same
-  change. Do not write claims about the public server's operator or how long it keeps data.
+  change. Claims about the public server's operator and how long it keeps data live only in the "The public server"
+  section of docs/PRIVACY.md, which only the maintainer changes: do not add or edit them elsewhere.
 - **The mod never changes the game's files.** Settings, logs and screenshots go to the game's `mods` and
   `screenshots` folders, as described in the README.
 

@@ -14,7 +14,7 @@ for ver, body in re.findall(r'\{\s*"([^"]+)",\s*\{(.*?)nullptr\s*\}\s*\}', src, 
 sums = open('build/release/SHA256SUMS.txt').read().strip()
 text = "\n".join("- " + l if not l.startswith("  ") else "  " + l.strip() for l in lines)
 text += ("\n\nNeeds *Insaniquarium! Deluxe* from Steam. Installing: INSTALL.txt in the zip, or "
-         "[docs/INSTALL.md](docs/INSTALL.md).\n\nSHA-256:\n```\n" + sums + "\n```\n")
+         "[docs/INSTALL.md](https://github.com/undecuple/insaniquarium-remastered/blob/v" + sys.argv[1] + "/docs/INSTALL.md).\n\nSHA-256:\n```\n" + sums + "\n```\n")
 print(text)
 PY
 echo "wrote build/release/NOTES.md"

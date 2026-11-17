@@ -154,6 +154,16 @@ The module is a Lua file in `server/modules/` (mounted at `/nakama/data/modules`
   curl -s -X POST "http://127.0.0.1:7350/v2/rpc/remod_cleanup?http_key=$NAKAMA_HTTP_KEY&unwrap" -d '{"days":30}'
   # {"accounts_failed":0,"accounts_removed":12,"days":30,"listings_removed":0}
   ```
+  With the Caddy file, port 7350 is not open on the machine, so call it from inside Docker's network instead, with a
+  throwaway curl container (the Nakama image has no curl). Run it in the `server` folder, where `.env` is:
+  ```sh
+  KEY=$(sed -n 's/^NAKAMA_HTTP_KEY=//p' .env)
+  docker run --rm --network insaniquarium-coop_default curlimages/curl:8.11.1 -s -X POST \
+    "http://nakama:7350/v2/rpc/remod_cleanup?http_key=$KEY&unwrap" -d '{"days":30}'
+  ```
+  This call never goes through Caddy, so the key does not reach its access log. The key is in the command line while
+  the call runs, so other users of that machine can see it in `ps` and `docker inspect`: run it on a machine only you
+  use. Keep the key secret: anyone who has it can call the rule.
   A game whose account is gone makes a new one the next time it logs in; a player online at that moment is reconnected
   as a new account and rejoins its game (hence a quiet hour). Players' sessions can't call it.
 - **Chat log (optional):** the game's chat goes player to player inside the match, so the server stores none of it.

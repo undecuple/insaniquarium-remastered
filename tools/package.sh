@@ -18,8 +18,10 @@ mkdir -p "$D/mods"
 cp build/dist/ddraw.dll build/dist/install-steam.bat build/dist/uninstall-steam.bat install/install-steam.sh "$D/"
 cp build/dist/mods/*.dll build/dist/mods/remastered-mod.default.ini build/dist/mods/remod-files.txt "$D/mods/"
 [ $STEAMAPI = 0 ] || { mkdir -p "$D/mods/coop"; cp third_party/steamworks/steam_api.dll "$D/mods/coop/"; }
+# the file list names only what the zip has: without steam_api.dll the uninstall must not remove a copy the player added
+[ $STEAMAPI = 1 ] || sed -i '/^coop\\steam_api\.dll\r\?$/d' "$D/mods/remod-files.txt"
 # README.txt: the README without what only works on a web page (the screenshot table, image badges)
-python3 - "$D/README.txt" <<'PY'
+VER=$VER python3 - "$D/README.txt" <<'PY'
 import re, sys
 text = open('README.md').read()
 text = re.sub(r'## Screenshots\n.*?(?=\n## )', '', text, flags=re.S)
@@ -28,12 +30,20 @@ text = re.sub(r'\[!\[[^\]]*\]\([^)]*\)\]\(([^)]*)\)', r'\1', text)   # an image 
 text = '\n'.join(l for l in text.split('\n') if not l.lstrip().startswith('!['))
 # relative links: to the zip's own files where it has them, else to the project page (the zip has no docs/ folder)
 local = {'docs/INSTALL.md': 'INSTALL.txt', 'LICENSE.txt': 'LICENSES.txt', 'NOTICE.md': 'LICENSES.txt'}
-base = 'https://github.com/undecuple/insaniquarium-remastered/blob/main/'
+import os
+base = 'https://github.com/undecuple/insaniquarium-remastered/blob/v' + os.environ['VER'] + '/'   # the docs of this version
 text = re.sub(r'\]\(((?!https?:|#)[^)]+)\)',
               lambda m: '](' + local.get(m.group(1).split('#')[0], base + m.group(1)) + ')', text)
 open(sys.argv[1], 'w', newline='\r\n').write(text)
 PY
-cp docs/INSTALL.md "$D/INSTALL.txt"
+# INSTALL.txt: docs/INSTALL.md, its links to other docs pages pointing at the project page (the zip has no docs/ folder)
+VER=$VER python3 - "$D/INSTALL.txt" <<'PY'
+import os, re, sys
+text = open('docs/INSTALL.md').read()
+base = 'https://github.com/undecuple/insaniquarium-remastered/blob/v' + os.environ['VER'] + '/docs/'
+text = re.sub(r'\]\(((?!https?:|#)[^)]+)\)', lambda m: '](' + base + m.group(1) + ')', text)
+open(sys.argv[1], 'w', newline='\r\n').write(text)
+PY
 python3 - "$D/CHANGELOG.txt" <<'PY'
 import re, sys
 src = open('include/version.h').read()

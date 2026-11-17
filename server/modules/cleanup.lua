@@ -4,9 +4,12 @@
 --   - accounts created more than `days` days ago (default 30): a game whose account is gone simply makes a new one the
 --     next time it logs in (a player online at that moment is reconnected as a new account and rejoins its game);
 --   - listings not refreshed for a day (a hosting game refreshes its own every 30 s and removes it when it closes).
--- An RPC for the server's owner only: it refuses calls from players' sessions, and the paths a proxy lets through don't
--- include /v2/rpc. Call it on the server once a day, e.g. from cron:
+-- An RPC for the server's owner only: it refuses calls from players' sessions, and the http key is the owner's secret.
+-- (The Caddy file in this folder passes every path, /v2/rpc included, so keep the key secret.) Call it on the server
+-- once a day, e.g. from cron:
 --   curl -s -X POST "http://127.0.0.1:7350/v2/rpc/remod_cleanup?http_key=$NAKAMA_HTTP_KEY&unwrap" -d '{"days":30}'
+-- With the Caddy file port 7350 is closed on the machine: docs/SERVER.md ("Tidying up") shows the call from inside
+-- Docker's network.
 -- Accounts are deleted through Nakama (nk.account_delete_id), which also ends their sessions and removes their storage.
 local nk = require("nakama")
 
