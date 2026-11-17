@@ -1,0 +1,58 @@
+name: release-notify
+
+# Posts one message to the project's Discord channel after the release workflow has published a release.
+# It follows the release workflow (workflow_run), not the release event: the release workflow creates the release with
+# the repository's own token, and GitHub does not start other workflows from events made with that token.
+# The webhook URL lives only in the repository secret DISCORD_RELEASE_WEBHOOK; without it (forks) the job does nothing.
+
+on:
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  discord:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post the release to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          TAG: ${{ github.event.workflow_run.head_branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WEBHOOK" ]; then
+            echo "::notice::DISCORD_RELEASE_WEBHOOK is not set; no message sent."
+            exit 0
+          fi
+          case "$TAG" in
+            v[0-9]*) ;;
+            *) echo "::notice::'$TAG' is not a version tag; no message sent."; exit 0 ;;
+          esac
+          # the release's own data from the public API (no token needed); the text is data, never shell
+          curl --fail-with-body --silent --show-error "https://api.github.com/repos/$REPO/releases/tags/$TAG" > release.json
+          kind="release"
+          [ "$(jq -r '.prerelease' release.json)" = "true" ] && kind="pre-release"
+          # allowed_mentions empty: the message can never ping anyone, whatever the release notes say.
+          jq --arg tag "$TAG" --arg kind "$kind" '. as $r | ($r.body // "") as $body | $r.html_url as $url | {
+            username: "Insaniquarium Remastered",
+            thread_name: (("Insaniquarium Remastered " + $tag) | .[0:100]),
+            allowed_mentions: {parse: []},
+            embeds: [{
+              title: ("Insaniquarium Remastered " + $tag + " is out"),
+              url: $url,
+              description: (
+                (if ($body | gsub("\\s"; "") | length) == 0
+                  then "A new " + $kind + " is available. Read the changes on the release page."
+                  else ($body | gsub("\\r"; "") | .[0:1800]) + (if ($body | length) > 1800 then "\n…" else "" end)
+                 end)
+                + "\n\n[Full notes and download](" + $url + ")"),
+              color: 14811109
+            }]
+          }' release.json > payload.json
+          curl --fail-with-body --silent --show-error -H "Content-Type: application/json" --data @payload.json "$WEBHOOK"
+          echo "Posted $TAG ($kind)."
