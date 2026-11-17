@@ -19,6 +19,13 @@ was involved), and what someone could do with it. You'll get an answer within a 
 into the next release and the release notes credit you (unless you'd rather not be named). If it isn't, you'll get
 an explanation.
 
+## Data requests
+
+The same private form takes requests about your data on the public co-op server (an account deleted, or a copy of what
+it holds) and reports of abuse there: [docs/PRIVACY.md](docs/PRIVACY.md#the-public-server) says what it keeps and for how
+long. Say it is a data request, and add your device id (`[coop] device=` in `mods/remastered-mod.ini`). The same one-week
+answer applies.
+
 ## What counts
 
 The mod runs native code inside the game, so these matter most:
