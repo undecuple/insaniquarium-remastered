@@ -3,6 +3,15 @@
 What changed in each version, newest first. Generated from `include/version.h` by `tools/changelog-md.py`:
 edit it there, not here. Co-op only joins players on the same version.
 
+## 0.4.3
+
+- Uninstalling no longer removes a steam_api.dll
+  you added yourself.
+- The install guide in the download links to the
+  right pages.
+- Co-op only joins the same version: update
+  together with friends.
+
 ## 0.4.2
 
 - Nothing changes in play. The About page

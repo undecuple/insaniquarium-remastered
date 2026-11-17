@@ -2,12 +2,20 @@
 // release page). Newest first, short lines (about 50 characters);
 // bump REMOD_VERSION with each release (DEVELOPING.md, Releasing).
 #pragma once
-#define REMOD_VERSION "0.4.2"
+#define REMOD_VERSION "0.4.3"
 #define REMOD_WIDEN2(x) L##x
 #define REMOD_WIDEN(x) REMOD_WIDEN2(x)
 #define REMOD_VERSION_W REMOD_WIDEN(REMOD_VERSION)
 
 static const struct { const char* version; const char* lines[16]; } RemodChangelog[] = {
+    { "0.4.3", {
+        "Uninstalling no longer removes a steam_api.dll",
+        "  you added yourself.",
+        "The install guide in the download links to the",
+        "  right pages.",
+        "Co-op only joins the same version: update",
+        "  together with friends.",
+        nullptr } },
     { "0.4.2", {
         "Nothing changes in play. The About page",
         "  now says plainly that this is an unofficial",
