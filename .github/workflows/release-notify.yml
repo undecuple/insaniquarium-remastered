@@ -23,6 +23,7 @@ jobs:
           WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
           TAG: ${{ github.event.workflow_run.head_branch }}
           REPO: ${{ github.repository }}
+          ROLE: "1572342313861255189"   # the project's Discord role (a public number, not a secret)
         run: |
           set -euo pipefail
           if [ -z "$WEBHOOK" ]; then
@@ -37,11 +38,13 @@ jobs:
           curl --fail-with-body --silent --show-error "https://api.github.com/repos/$REPO/releases/tags/$TAG" > release.json
           kind="release"
           [ "$(jq -r '.prerelease' release.json)" = "true" ] && kind="pre-release"
-          # allowed_mentions empty: the message can never ping anyone, whatever the release notes say.
-          jq --arg tag "$TAG" --arg kind "$kind" '. as $r | ($r.body // "") as $body | $r.html_url as $url | {
+          # allowed_mentions names the one project role: the message pings that role only (never @everyone, @here or a
+          # person), whatever the release notes say.
+          jq --arg tag "$TAG" --arg kind "$kind" --arg role "$ROLE" '. as $r | ($r.body // "") as $body | $r.html_url as $url | {
             username: "Insaniquarium Remastered",
             thread_name: (("Insaniquarium Remastered " + $tag) | .[0:100]),
-            allowed_mentions: {parse: []},
+            content: ("<@&" + $role + ">"),
+            allowed_mentions: {parse: [], roles: [$role]},
             embeds: [{
               title: ("Insaniquarium Remastered " + $tag + " is out"),
               url: $url,
