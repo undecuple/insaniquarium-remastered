@@ -9,6 +9,10 @@ nothing reads the clock, so the same run gives the same bytes.
   tools/repo_art.py --check    paints again and fails if a file on disk differs
   tools/repo_art.py --preview  writes the three images to work/art-preview/ instead (not tracked)
 
+The README also has an animated banner, assets/banner-animated.gif: the same banner with fish swimming across and
+bubbles rising behind the lettering. The fish are drawn here, shape by shape (no game art). It loops without a seam:
+every motion goes round a whole number of times in the loop. --check and --preview cover it too.
+
 Needs numpy and Pillow (nix-shell -p 'python3.withPackages(ps:[ps.numpy ps.pillow])').
 The social preview is 1280x640 and under 1 MB; GitHub has no API for it: upload it by hand
 (Settings > General > Social preview). Every mark stays inside a 40 px margin (scaled for the 2x banner).
@@ -65,7 +69,7 @@ def warped(rng, w, h, cells):
     return base[sy, sx]
 
 
-def paint(w, h, seed=7):
+def paint(w, h, seed=7, grain=5.5):
     rng = np.random.RandomState(seed)
     sc = h / 640.0
     yy, xx = np.mgrid[0:h, 0:w]
@@ -119,7 +123,8 @@ def paint(w, h, seed=7):
     base.alpha_composite(bub)
     img = np.asarray(base.convert("RGB"), float)
     # grain and vignette
-    img += (rng.randn(h, w, 1) * 5.5)
+    if grain:
+        img += (rng.randn(h, w, 1) * grain)
     v = ((xx / w - 0.5) ** 2 * 1.3 + (yy / h - 0.48) ** 2 * 1.6)
     img *= (1 - np.clip(v, 0, 1) ** 1.2 * 0.75)[..., None]
     return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).convert("RGBA")
@@ -183,6 +188,116 @@ def make():
     return out
 
 
+# ---- the animated banner -------------------------------------------------------------------------------------------
+FRAMES, FRAME_MS = 100, 70   # 7 seconds; every motion below completes a whole number of turns in FRAMES
+
+
+def fish_sprite(L, top, belly, fin, phase, S=4):
+    """A fish facing right, L px long, drawn at S times the size and scaled down. `phase` swings the tail."""
+    W, H = int(L * 1.25), int(L * 0.72)
+    im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    cy = H * S / 2
+    sway = np.sin(phase) * 0.14 * H * S
+    outline = (6, 30, 46, 255)
+    # tail, dorsal and pelvic fins
+    d.polygon([(0.30 * W * S, cy - 0.07 * H * S), (0.01 * W * S, cy - 0.36 * H * S + sway), (0.08 * W * S, cy + sway * 0.4),
+               (0.01 * W * S, cy + 0.36 * H * S + sway), (0.30 * W * S, cy + 0.07 * H * S)], fill=fin, outline=outline, width=S)
+    d.polygon([(0.42 * W * S, cy - 0.26 * H * S), (0.56 * W * S, cy - 0.52 * H * S), (0.78 * W * S, cy - 0.26 * H * S)],
+              fill=fin, outline=outline, width=S)
+    d.polygon([(0.50 * W * S, cy + 0.24 * H * S), (0.58 * W * S, cy + 0.46 * H * S), (0.70 * W * S, cy + 0.26 * H * S)],
+              fill=fin, outline=outline, width=S)
+    box = [0.22 * W * S, cy - 0.34 * H * S, 0.99 * W * S, cy + 0.34 * H * S]
+    mask = Image.new("L", im.size, 0)
+    ImageDraw.Draw(mask).ellipse(box, fill=255)
+    body = Image.new("RGBA", im.size, top)
+    # a lighter belly and one pale stripe, both clipped to the body
+    det = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    dd = ImageDraw.Draw(det)
+    dd.ellipse([0.20 * W * S, cy + 0.02 * H * S, 1.01 * W * S, cy + 0.70 * H * S], fill=belly)
+    dd.ellipse([0.50 * W * S, cy - 0.40 * H * S, 0.60 * W * S, cy + 0.40 * H * S], fill=(255, 255, 255, 80))
+    body.alpha_composite(det)
+    body.putalpha(mask)
+    im.alpha_composite(body)
+    d.ellipse(box, outline=outline, width=S)
+    d.arc([0.66 * W * S, cy - 0.30 * H * S, 0.84 * W * S, cy + 0.30 * H * S], 100, 260, fill=outline, width=S)
+    ex, ey, r = 0.90 * W * S, cy - 0.08 * H * S, 0.08 * H * S
+    d.ellipse([ex - r, ey - r, ex + r, ey + r], fill=(255, 255, 255, 255), outline=outline, width=S)
+    p = r * 0.5
+    d.ellipse([ex - p + r * 0.2, ey - p, ex + p + r * 0.2, ey + p], fill=outline)
+    return im.resize((W, H), Image.LANCZOS)
+
+
+# size (px), y as a fraction of the height, colours (back, belly, fins), direction, start, swim cycles, bob cycles, phase
+FISH = [
+    (118, 0.74, (255, 168, 54, 255), (255, 226, 150, 255), (255, 120, 60, 235), 1, 0.00, 1, 2, 0.0),
+    (78, 0.40, (64, 196, 200, 255), (200, 246, 232, 255), (30, 140, 170, 235), -1, 0.28, 1, 3, 1.7),
+    (58, 0.60, (255, 120, 112, 255), (255, 214, 200, 255), (220, 70, 90, 235), 1, 0.52, 1, 2, 3.1),
+    (96, 0.22, (110, 150, 235, 255), (214, 232, 255, 255), (70, 90, 200, 235), -1, 0.74, 1, 2, 4.4),
+    (44, 0.84, (250, 214, 70, 255), (255, 244, 186, 255), (232, 160, 40, 235), 1, 0.88, 1, 3, 5.6),
+]
+BUBBLES = [(0.06, 7, 0.10), (0.15, 12, 0.55), (0.27, 5, 0.80), (0.41, 9, 0.30), (0.56, 6, 0.95), (0.63, 13, 0.05),
+           (0.74, 8, 0.65), (0.83, 11, 0.40), (0.91, 5, 0.20), (0.97, 9, 0.75)]   # x fraction, radius, start
+
+
+def animation():
+    """The frames of the banner: the 1280x320 banner with swimming fish and rising bubbles behind the lettering."""
+    w, h = 1280, 320
+    base = paint(w, h, seed=8, grain=0)   # no grain: it would not compress in a GIF
+    plain = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    lettering(plain, (60, 38, 1220, 290), [(LINE1, 90, "title"), (LINE2, 46, "title"), (FAN, 24, "sub")])
+    frames = []
+    for k in range(FRAMES):
+        t = k / FRAMES
+        im = base.copy()
+        M = 200
+        layer = Image.new("RGBA", (w + 2 * M, h), (0, 0, 0, 0))
+        for size, yf, top, belly, fin, dr, start, laps, bobs, ph in FISH:
+            sp = fish_sprite(size, top, belly, fin, 2 * np.pi * (3 * t) + ph)
+            if dr < 0:
+                sp = sp.transpose(Image.FLIP_LEFT_RIGHT)
+            span = w + 2 * M
+            x = ((start + dr * laps * t) % 1.0) * span - sp.width / 2
+            y = yf * h + np.sin(2 * np.pi * (bobs * t) + ph) * 7 - sp.height / 2
+            layer.alpha_composite(sp, (int(round(x)), int(round(y))))
+        im.alpha_composite(layer.crop((M, 0, M + w, h)))
+        S = 3
+        bub = Image.new("RGBA", (w * S, h * S), (0, 0, 0, 0))
+        bd = ImageDraw.Draw(bub)
+        for xf, r, st in BUBBLES:
+            span = h + 2 * r + 20
+            y = h + r - ((st + t) % 1.0) * span
+            x = xf * w + np.sin(2 * np.pi * (2 * t) + st * 9) * 6
+            bd.ellipse([(x - r) * S, (y - r) * S, (x + r) * S, (y + r) * S], fill=(255, 255, 255, 22),
+                       outline=(255, 255, 255, 150), width=max(2, int(r * S / 7)))
+            hr = r * 0.22
+            bd.ellipse([(x - r * 0.45 - hr) * S, (y - r * 0.45 - hr) * S, (x - r * 0.45 + hr) * S, (y - r * 0.45 + hr) * S],
+                       fill=(255, 255, 255, 190))
+        im.alpha_composite(bub.resize((w, h), Image.LANCZOS))
+        im.alpha_composite(plain)
+        frames.append(im.convert("RGB"))
+    # one palette for all frames, so the unchanged pixels stay identical and the GIF only stores what moves
+    sheet = Image.new("RGB", (w, h * 3))
+    for i, k in enumerate((0, FRAMES // 3, 2 * FRAMES // 3)):
+        sheet.paste(frames[k], (0, i * h))
+    pal = sheet.quantize(colors=255, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    return [fr.quantize(palette=pal, dither=Image.Dither.NONE) for fr in frames]
+
+
+def save_gif(frames, path):
+    """Every frame after the first stores only the pixels that changed (the rest is the transparent index 255 over
+    the previous frame, which compresses to almost nothing)."""
+    idx = [np.asarray(fr) for fr in frames]
+    pal = frames[0].getpalette()
+    out = [frames[0]]
+    for k in range(1, len(frames)):
+        im = Image.fromarray(np.where(idx[k] != idx[k - 1], idx[k], 255).astype(np.uint8), "P")
+        im.putpalette(pal)
+        out.append(im)
+    out[0].save(path, save_all=True, append_images=out[1:], duration=FRAME_MS, loop=0, optimize=False, disposal=1,
+                transparency=255)
+
+
 def main():
     check = "--check" in sys.argv
     dest = ROOT / ("work/art-preview" if "--preview" in sys.argv else "assets")
@@ -200,6 +315,17 @@ def main():
         else:
             tmp.replace(p)
             print(f"{p} {im.size[0]}x{im.size[1]} {p.stat().st_size // 1024} KB")
+    p = dest / "banner-animated.gif"
+    tmp = dest / ".banner-animated.new.gif"
+    save_gif(animation(), tmp)
+    if check:
+        same = p.exists() and p.read_bytes() == tmp.read_bytes()
+        tmp.unlink()
+        print(("ok     " if same else "DIFFERS ") + str(p))
+        bad += not same
+    else:
+        tmp.replace(p)
+        print(f"{p} {FRAMES} frames {p.stat().st_size // 1024} KB")
     sys.exit(1 if bad else 0)
 
 

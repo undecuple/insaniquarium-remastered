@@ -1,6 +1,9 @@
 <!-- badges: shown on GitHub only (tools/package.sh leaves these blocks out of README.txt) -->
 <p align="center">
-  <img src="assets/banner.png" srcset="assets/banner@2x.png 2x" width="1280" alt="Insaniquarium - Remastered Mod. Mods and online co-op for Insaniquarium! Deluxe // Unofficial fan project">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="assets/banner.png, assets/banner@2x.png 2x">
+    <img src="assets/banner-animated.gif" width="1280" alt="Insaniquarium - Remastered Mod. Mods and online co-op for Insaniquarium! Deluxe // Unofficial fan project">
+  </picture>
 </p>
 <!-- /badges -->
 
@@ -173,7 +176,7 @@ tests/      test-only mods
 tools/      build, packaging, game check, art generator
 docs/       install, features, keys, settings, server, roadmap, game updates
             (also BUILDING.md, KNOWN_ISSUES.md, CHANGELOG.md and AGENTS.md at the top)
-assets/     README banner and social preview
+assets/     README banner (still and animated) and social preview
 ```
 
 ## Licence and credits
